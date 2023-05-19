@@ -150,6 +150,21 @@
       </ng-template>
     </imx-icon-tile>
 
+    <imx-icon-tile
+      data-imx-identifier="start-tile-contact-information"
+      [caption]="'#LDS# Contact' | translate"
+      [subtitle]="'#LDS#Contact Information.' | translate"
+      [identifier]="'go-to-contact-information'"
+      *ngIf="ShowContactInformation()"
+    >
+      <ng-template #ActionTemplate>
+        <button mat-button color="primary" (click)="GoToContactInformation()">
+          <span>{{ '#LDS# Contact' | translate }}</span>
+          <eui-icon size="m" icon="forward"></eui-icon>
+        </button>
+      </ng-template>
+    </imx-icon-tile>
+
     <imx-tile
       data-imx-identifier="start-tile-it-shop-approval-inquiries"
       [caption]="'#LDS#Heading Request Inquiries' | translate"

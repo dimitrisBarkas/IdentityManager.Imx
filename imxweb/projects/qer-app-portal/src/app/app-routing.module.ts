@@ -32,6 +32,7 @@ import {
   PasswordQueryComponent
 } from 'qer';
 import { SupportinfoComponent } from 'projects/qer/src/lib/supportinfo/supportinfo.component';
+import { ContactinformationComponent } from 'projects/qer/src/lib/contactinformation/contactinformation.component';
 
 const externalUrlProvider = new InjectionToken('externalUrlRedirectResolver');
 
@@ -52,6 +53,7 @@ const routes: Routes = [
     resolve: [RouteGuardService]
   },
   { path: 'supportinfo', component: SupportinfoComponent },
+  { path: 'contactinformation', component: ContactinformationComponent},
   { path: '**', redirectTo: 'dashboard' }
 ];
 

@@ -72,6 +72,14 @@ export class StartComponent implements OnInit {
       setTimeout(() => this.busyService.hide(overlayRef));
     }
   }
+
+  public ShowContactInformation(): boolean {
+    return true;
+  }
+
+  public GoToContactInformation(): void {
+    this.router.navigate(['contactinformation']);
+  }
   
   public ShowSupportInformation(): boolean {
     return true;
