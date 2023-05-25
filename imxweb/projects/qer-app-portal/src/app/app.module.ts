@@ -78,10 +78,13 @@ import { PortalStarlingService } from './portal-starling.service';
 import { environment } from '../environments/environment';
 import appConfigJson from '../appconfig.json';
 import { PortalHistoryService } from './portal-history.service';
+import { ReactiveFormsModule } from '@angular/forms';
+import { ContactinformationComponent } from '../../../qer/src/lib/contactinformation/contactinformation.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    ContactinformationComponent
   ],
   imports: [
     AppRoutingModule,
@@ -125,7 +128,8 @@ import { PortalHistoryService } from './portal-history.service';
     RequestConfigModule,
     RequestHistoryModule,
     ServiceCategoriesModule,
-    ServiceItemsEditModule
+    ServiceItemsEditModule,
+    ReactiveFormsModule
   ],
   providers: [
     { provide: 'environment', useValue: environment },

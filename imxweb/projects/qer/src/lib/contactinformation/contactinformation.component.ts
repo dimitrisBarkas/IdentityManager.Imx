@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { FormBuilder } from '@angular/forms';
 
 @Component({
   selector: 'imx-contactinformation',
@@ -12,14 +13,44 @@ export class ContactinformationComponent implements OnInit {
   temperature: number;
   wind_speed: number;
 
-  constructor(private http: HttpClient) { }
+  employee: any[] = [];
+
+  contactForm = this.formBuilder.group({
+    name:'',
+    email:'',
+    message:''
+  });
+
+
+  constructor(private http: HttpClient, private formBuilder: FormBuilder) { }
 
   ngOnInit(): void {
+
+    this.employeeAPI(); //Call the employee API
+
+  }
+
+  employeeAPI(){
     let headers = new HttpHeaders({});
-    this.http.get<any>('https://api.open-meteo.com/v1/forecast?latitude=37.98376&longitude=23.72784&current_weather=true&hourly=temperature_2m,windspeed_10m', {headers: headers}).subscribe(data => { 
-      this.date_time = data.current_weather.time;
-      this.temperature = data.current_weather.temperature;
-      this.wind_speed = data.current_weather.windspeed;
-      console.log(data);});
+    // Get data from the API database
+    this.http.get<any>('https://hub.dummyapis.com/employee?noofRecords=10&idStarts=1001', {headers: headers})
+      .subscribe(employeedata => {
+      this.employee = employeedata; // Passing the employeedata to the employee array
+    });
+  }
+
+  SubmitForm(){
+    const formData = this.contactForm.value;
+    // Send (Post) the data from the input fields
+    this.http.post('https://jsonplaceholder.typicode.com/posts', formData)
+    .subscribe(
+      response => {
+        console.log('Data saved successfully', response);
+        this.contactForm.reset();
+      },
+    error => {
+      console.error('Error saving data', error);
+    }
+    );
   }
 }
