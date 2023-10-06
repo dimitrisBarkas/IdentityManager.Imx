@@ -36,6 +36,7 @@ import { DuplicateCheckComponent } from './shopping-cart-validation-detail/dupli
 // tslint:disable-next-line: max-line-length
 import { ProductDependencyCheckComponent } from './shopping-cart-validation-detail/product-dependency-check/product-dependency-check.component';
 import { ObjectSheetService } from './object-sheet/object-sheet.service';
+import { BulkImportsTileComponent } from './bulk-imports/bulk-imports-tile/bulk-imports-tile.component';
 
 @Injectable({
   providedIn: 'root'
@@ -52,6 +53,7 @@ export class QerService {
   public init(): void {
 
     this.extService.register('QBM_ops_ObjectOverview_Actions', { instance: ObjectOverviewPersonComponent });
+    this.extService.register('DashboardMediumTile_BulkImports_BulkImportsTile', { instance: BulkImportsTileComponent });
 
     this.objectsheetService.register('Person', ObjectsheetPersonComponent);
 
@@ -69,7 +71,12 @@ export class QerService {
     //     if (!preProps.includes('ITSHOP')) {
     //       return null;
     //     }
+    this.menuService.addMenuFactories(
 
+      (preProps: string[], __: string[]) => {
+        if (!preProps.includes('ITSHOP')) {
+           return null;
+         }
     //     return {
     //       id: 'ROOT_RelatedApplications',
     //       title: '#LDS#Related applications',
@@ -79,5 +86,25 @@ export class QerService {
     //     };
     //   }
     // );
+        return {
+          id: 'ROOT_BULK',
+          title: '#LDS#Bulk imports',
+          sorting: '100',
+      // TODO (TFS number 805756): get from API; has a tree structure
+          items:[
+           {
+            id: 'BUSINESS_ROLES_IMPORT',
+            route: 'csvsync-component',
+            title: '#LDS#Business Roles'
+           },
+           {
+            id: 'IDENTITIES_IMPORT',
+            route: 'csvsync-component',
+            title: '#LDS#Identities'
+           },
+        ],
+        };
+      }
+    );
   }
 }
