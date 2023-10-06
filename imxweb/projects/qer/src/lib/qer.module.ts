@@ -132,7 +132,6 @@ const routes: Routes = [
     FkAdvancedPickerModule,
     OpsModule,
     DataExplorerViewModule,
-    BulkImportsModule
   ],
   exports: [PasscodeViewerComponent, ObjectOverviewPersonComponent],
   providers: [
