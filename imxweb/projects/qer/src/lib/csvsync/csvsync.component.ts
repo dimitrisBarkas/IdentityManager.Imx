@@ -16,10 +16,13 @@ export interface ValidationElement{
   colIndex: number;
   message: string;
 }
+
 export interface PreValidationElement{
   message: string;
   permission: boolean;
 }
+
+
 
 @Component({
   selector: 'imx-csvsync',
@@ -27,6 +30,7 @@ export interface PreValidationElement{
   styleUrls: ['./csvsync.component.scss']
 })
 export class CsvsyncComponent implements OnInit, AfterViewInit {
+
 
   startValidateObj: any;
   preValidateMsg: object = {message:'', permission: false};
@@ -38,6 +42,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   csvData: any[] = [];
   fileLoaded: boolean = false;
   dialogHide: boolean = true;
+
   headers: string[] = [];
   validationResponses: any[] = [];
   validationResults: ValidationElement[] = [];
@@ -670,6 +675,7 @@ public async startValidate(endpoint: string, startobject: any): Promise<object> 
     responseType: 'json'
   };
 }
+
 
 
 private countObjectsWithFunctionKey(data: any): number {
