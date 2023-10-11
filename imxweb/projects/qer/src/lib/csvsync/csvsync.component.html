@@ -95,7 +95,7 @@
     <button
     mat-raised-button
     [disabled]="!allRowsValidated || validating || initializing || !fileLoaded || loadingValidation || loadingImport"
-    [ngClass]="{'import-button': allRowsValidated && !validating && !initializing && fileLoaded && !loadingValidation && !loadingImport}"
+    color="primary"
     (click)="openConfirmationDialog()"
   >
     Import to database

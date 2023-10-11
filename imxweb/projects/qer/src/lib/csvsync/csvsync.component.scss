@@ -75,10 +75,6 @@ td.mat-cell {
     margin-left: 10px;
     margin-top: 10px;
   }
-  .import-button{
-    background-color:green;
-    color:white;
-  }
 }
 
 .validation-result {
@@ -227,7 +223,10 @@ td.mat-cell {
 }
 
 
-
-.whatever {
+.mat-raised-button.mat-primary {
   background-color: green;
+}
+.mat-raised-button.mat-primary.mat-button-disabled,
+.mat-raised-button.mat-button-disabled.mat-button-disabled {
+  background-color: rgba(0, 0, 0, 0.12);
 }
