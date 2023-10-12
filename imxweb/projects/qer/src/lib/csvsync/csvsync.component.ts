@@ -41,7 +41,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   csvDataSource: MatTableDataSource<any> = new MatTableDataSource();
   csvData: any[] = [];
   fileLoaded: boolean = false;
-  dialogHide: boolean = true;
+  dialogHide: boolean = false;
 
   headers: string[] = [];
   validationResponses: any[] = [];
@@ -538,7 +538,9 @@ private async validateNoDuplicates(columnMapping: any): Promise<void> {
 
 public async onValidateClicked(endpoint: string): Promise<void> {
   this.shouldValidate = true;
-  this.startValidateObj = this.startValidate(endpoint, {totalRows: this.totalRows});
+  this.dialogHide = false;
+  this.startValidateObj = this.startValidate(endpoint, { totalRows: this.totalRows });
+
 }
 
 public async validate(endpoint: string, columnMapping: any): Promise<void> {
@@ -649,7 +651,19 @@ private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<Vali
 
 public async startValidate(endpoint: string, startobject: any): Promise<object> {
   const msg = await this.config.apiClient.processRequest(this.startValidateMethod(endpoint, startobject));
-  this.preValidateMsg = msg;
+
+
+    // Open the validation dialog
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: msg,
+    });
+  
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result === 'ok' && msg.permission) {
+        // Handle the "OK" button click here
+      }
+    });
+
   console.log(msg);
   console.log(msg.permission);
   this.dialogHide = false;
