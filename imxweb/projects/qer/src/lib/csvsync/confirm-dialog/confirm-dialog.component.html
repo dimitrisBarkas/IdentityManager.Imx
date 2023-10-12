@@ -2,9 +2,15 @@
 <div mat-dialog-content [ngStyle]="{'color': msg.permission ? 'green' : 'red'}">
   {{ msg.message }}
 </div>
+<div>
+    <div class="loading-wrapper">
+  <mat-progress-bar mode="determinate" [value]="progressValue" ></mat-progress-bar>
+    </div>
+</div>
 <!--
 <div *ngIf="msg.permission">
 
+  
 
 
   <div *ngIf="loadingValidation || loadingImport" class="loading-container">

@@ -11,6 +11,7 @@ import { ViewChild } from '@angular/core';
 })
 export class ConfirmDialogComponent implements OnInit {
   @ViewChild(CsvsyncComponent,{ static: false }) CsvsyncComponent: CsvsyncComponent;
+  progressValue: number = 0;
 
 
 
@@ -22,7 +23,18 @@ export class ConfirmDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-   
+    this.updateProgress();
+  }
+
+  updateProgress() {
+
+    const interval = setInterval(() => {
+      if (this.progressValue < 100) {
+        this.progressValue += 10; 
+      } else {
+        clearInterval(interval); 
+      }
+    }, 1000); 
   }
 
     
