@@ -17,11 +17,11 @@ export interface ValidationElement{
   message: string;
 }
 
+
 export interface PreValidationElement{
   message: string;
   permission: boolean;
 }
-
 
 
 @Component({
@@ -42,7 +42,6 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   csvData: any[] = [];
   fileLoaded: boolean = false;
   dialogHide: boolean = false;
-
 
   headers: string[] = [];
   validationResponses: any[] = [];
@@ -649,6 +648,7 @@ private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<Vali
 }
 
 
+
 public async startValidate(endpoint: string, startobject: any): Promise<object> {
   const msg = await this.config.apiClient.processRequest(this.startValidateMethod(endpoint, startobject));
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
@@ -685,7 +685,6 @@ public async startValidate(endpoint: string, startobject: any): Promise<object> 
     responseType: 'json'
   };
 }
-
 
 
 private countObjectsWithFunctionKey(data: any): number {
