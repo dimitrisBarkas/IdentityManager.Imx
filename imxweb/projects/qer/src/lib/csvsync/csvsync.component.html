@@ -8,7 +8,7 @@
   </eui-alert>
 
   <eui-alert *ngIf="fileLoaded && numberOfErrors === 0 && (!allRowsValidated || validating || initializing) && numberOfErrors === 0" class="imx-helper-alert" type="warning" condensed="true" [colored]="true" [dismissable]="true">
-    <span>Validate your CSV data.</span>
+    <span>Select a function and Validate your CSV data.</span>
   </eui-alert>
 
   <!--<eui-alert *ngIf="fileLoaded && allRowsValidated && !validating && !initializing && numberOfErrors === 0" class="imx-helper-alert" type="success" condensed="true" [colored]="true" [dismissable]="true">
@@ -78,10 +78,8 @@
   <div class="button-bar">
     <button
         mat-raised-button
-
         [disabled]="!fileLoaded || loadingValidation || loadingImport"
-
-        color="accent"
+        color="warn"
         (click)="replaceCsv()"
       >
         Remove CSV
@@ -90,22 +88,19 @@
         mat-raised-button
 
         [disabled]="!fileLoaded || selectedOptionKey === null || loadingValidation || loadingImport"
-
-        color="warn"
+        color="accent"
         (click)="onValidateClicked(selectedOptionKey)"
       >
         Validate
     </button>
     <button
-        mat-raised-button
-
-        [disabled]="!allRowsValidated || validating || initializing || !fileLoaded || loadingValidation || loadingImport"
-        color="primary"
-        (click)="openConfirmationDialog()"
-
-      >
-        Import to database
-    </button>
+    mat-raised-button
+    [disabled]="!allRowsValidated || validating || initializing || !fileLoaded || loadingValidation || loadingImport"
+    color="primary"
+    (click)="openConfirmationDialog()"
+  >
+    Import to database
+  </button>
   </div>
 
   <div *ngIf="loadingValidation || loadingImport" class="loading-container">

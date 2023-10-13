@@ -1,8 +1,13 @@
-<h1 mat-dialog-title>Confirm Action</h1>
-<div mat-dialog-content *ngIf="data.selectedOptionKey">
-  <p>Are you sure you want to insert {{ data.totalRows }} {{ data.selectedOptionValue }}?</p>
+<h2 mat-dialog-title>Validation Message</h2>
+<div mat-dialog-content [ngStyle]="{'color': msg.permission ? 'green' : 'red'}">
+  {{ msg.message }}
+</div>
+<div *ngIf="msg.permission">
+    <div class="loading-wrapper">
+  <mat-progress-bar mode="determinate" [value]="progressValue" ></mat-progress-bar>
+    </div>
 </div>
 <div mat-dialog-actions>
-  <button mat-button color="warn" (click)="onNoClick()">Cancel</button>
-  <button mat-button color="primary" [mat-dialog-close]="true" [mat-dialog-close]="{ selectedOptionKey: data.selectedOptionKey }">Confirm</button>
+  <button mat-button [mat-dialog-close]="'cancel'">Cancel</button>
+  <button mat-button [mat-dialog-close]="'ok'" [disabled]="!msg.permission">OK</button>
 </div>

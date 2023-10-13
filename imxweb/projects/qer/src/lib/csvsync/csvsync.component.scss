@@ -222,3 +222,11 @@ td.mat-cell {
   color: red;
 }
 
+.mat-raised-button.mat-primary {
+  background-color: green;
+}
+.mat-raised-button.mat-primary.mat-button-disabled,
+.mat-raised-button.mat-button-disabled.mat-button-disabled {
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
