@@ -68,6 +68,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   public BulkActionsCofigParamCount: number;
   progress: number = 0;
   estimatedRemainingTime: string;
+  ShowErrors: boolean = true;
 
   constructor(
     private dialog: MatDialog,
@@ -242,6 +243,9 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     return reversedObject;
   }
 
+  toggleErrors() {
+    this.ShowErrors = !this.ShowErrors;
+  }
 
   getErrorRowsAndHeaders(): string {
     const errorInfos = this.validationResults.map(result => {

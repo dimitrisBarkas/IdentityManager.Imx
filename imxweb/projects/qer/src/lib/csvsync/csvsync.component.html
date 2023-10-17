@@ -29,6 +29,12 @@
             <mat-icon>close</mat-icon>
         </button>
     </mat-form-field>
+    <button mat-raised-button 
+    class="ToggleErrors"    
+    [disabled]="validating || initializing || !fileLoaded || loadingValidation || numberOfErrors === 0"
+    (click)="toggleErrors()">
+    Show Errors
+    </button>
 </div>
 <div>
   <mat-form-field appearance="outline" class="search-width">
@@ -67,11 +73,11 @@
         </ng-container>
 
 
-        <!-- Header and Rows -->
+        <!-- Header and Rows -->     
         <tr mat-header-row *matHeaderRowDef="headers"></tr>
-        <tr mat-row *matRowDef="let row; columns: headers; let rowIndex = index" [class.not-show]="numberOfErrors > 0 && !isRowError(rowIndex)" [class.error-row]="isRowError(rowIndex)">
+        <tr mat-row *matRowDef="let row; columns: headers; let rowIndex = index" [class.not-show]="numberOfErrors > 0 && !isRowError(rowIndex) && ShowErrors" [class.error-row]="isRowError(rowIndex)">
         </tr>
-
+       
       </table>
     </div>
     <mat-paginator #paginator [pageSizeOptions]="[20, 50, 100, 200]" showFirstLastButtons (page)="pageChanged($event)"></mat-paginator>
