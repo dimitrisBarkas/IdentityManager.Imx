@@ -21,10 +21,13 @@ h1.mat-headline {
   background-color: rgba(0, 0, 0, 0.12);
 }
 
-.mat-raised-button.ToggleErrors{
+/* .mat-raised-button.ToggleErrors{
     background-color: grey;
     color: white;
     margin-bottom: 10px;
+} */
+.mat-slide-toggle.ToggleErrors {
+  margin-bottom: 10px;
 }
 
 th.mat-header-cell {
