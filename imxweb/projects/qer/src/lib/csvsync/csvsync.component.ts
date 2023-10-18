@@ -16,13 +16,10 @@ export interface ValidationElement{
   colIndex: number;
   message: string;
 }
-
-
 export interface PreValidationElement{
   message: string;
   permission: boolean;
 }
-
 
 @Component({
   selector: 'imx-csvsync',
@@ -30,8 +27,6 @@ export interface PreValidationElement{
   styleUrls: ['./csvsync.component.scss']
 })
 export class CsvsyncComponent implements OnInit, AfterViewInit {
-
-
   startValidateObj: any;
   preValidateMsg: object = {message:'', permission: false};
   totalRows: number = 0;
@@ -41,8 +36,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   csvDataSource: MatTableDataSource<any> = new MatTableDataSource();
   csvData: any[] = [];
   fileLoaded: boolean = false;
-  dialogHide: boolean = false;
-
+  dialogHide: boolean = true;
   headers: string[] = [];
   validationResponses: any[] = [];
   validationResults: ValidationElement[] = [];
@@ -53,6 +47,8 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   validating: boolean;
   initializing: boolean = false;
   shouldValidate: boolean = false;
+  preValidateDialog: boolean = false;
+  validateDialog: boolean = false;
   numberOfErrors: number;
   searchControl = new FormControl({value: '', disabled: true});
   loadingValidation = false;
@@ -67,6 +63,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   public BulkActionsCofigParamCount: number;
   progress: number = 0;
   estimatedRemainingTime: string;
+  ShowErrors: boolean = true;
 
   constructor(
     private dialog: MatDialog,
@@ -241,6 +238,9 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     return reversedObject;
   }
 
+  toggleErrors() {
+    this.ShowErrors = !this.ShowErrors;
+  }
 
   getErrorRowsAndHeaders(): string {
     const errorInfos = this.validationResults.map(result => {
@@ -536,10 +536,19 @@ private async validateNoDuplicates(columnMapping: any): Promise<void> {
 }
 
 
-public async onValidateClicked(endpoint: string): Promise<void> {
+public async onValidate(endpoint: string): Promise<void> {
   this.shouldValidate = true;
-  this.dialogHide = false;
-  this.startValidateObj = this.startValidate(endpoint, { totalRows: this.totalRows });
+  this.preValidateDialog = true;
+  this.startValidateObj = this.getStartValidateData(endpoint, {totalRows: this.totalRows});
+}
+
+public async beginValidation(endpoint: string): Promise<void> {
+  this.preValidateDialog = false;
+  this.shouldValidate = true;
+  const mapping = await this.mapping(endpoint); // Fetch the mapping from API
+  await this.validate(endpoint, mapping);
+  this.allRowsValidated = this.checkAllRowsValidated(); // Call the new method after validation
+  this.validateDialog = true;
 }
 
 public async validate(endpoint: string, columnMapping: any): Promise<void> {
@@ -647,26 +656,20 @@ private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<Vali
   };
 }
 
-
-
-public async startValidate(endpoint: string, startobject: any): Promise<object> {
+public async getStartValidateData(endpoint: string, startobject: any): Promise<object> {
   const msg = await this.config.apiClient.processRequest(this.startValidateMethod(endpoint, startobject));
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: msg,
-    });
-  
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result === 'ok' && msg.permission) {
-        // Handle the "OK" button click here
-      }
-    });
+  this.preValidateMsg = msg;
   console.log(msg);
   console.log(msg.permission);
+
+  if (msg.permission === true) {
+    this.beginValidation(endpoint);
+  }
   this.dialogHide = false;
   return msg;
  }
 
- private startValidateMethod(endpoint: string, startobject: any): MethodDescriptor<PreValidationElement> {
+private startValidateMethod(endpoint: string, startobject: any): MethodDescriptor<PreValidationElement> {
   return {
     path: `/portal/bulkactions/${endpoint}/startvalidate`,
     parameters: [

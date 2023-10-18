@@ -86,7 +86,6 @@ const routes: Routes = [
     resolve: [RouteGuardService],
   },
   {
-
     path: 'csvsync-component',
     component: CsvsyncComponent,
     canActivate: [RouteGuardService],
