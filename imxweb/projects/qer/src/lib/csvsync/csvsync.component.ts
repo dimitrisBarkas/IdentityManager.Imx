@@ -11,7 +11,6 @@ import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.componen
 
 
 export interface PeriodicElement {}
-
 export interface ValidationElement{
   rowIndex: number;
   colIndex: number;
@@ -22,16 +21,12 @@ export interface PreValidationElement{
   permission: boolean;
 }
 
-
-
-
 @Component({
   selector: 'imx-csvsync',
   templateUrl: './csvsync.component.html',
   styleUrls: ['./csvsync.component.scss']
 })
 export class CsvsyncComponent implements OnInit, AfterViewInit {
-
   startValidateObj: any;
   preValidateMsg: object = {message:'', permission: false};
   totalRows: number = 0;
@@ -660,7 +655,6 @@ private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<Vali
     responseType: 'json'
   };
 }
-
 
 public async getStartValidateData(endpoint: string, startobject: any): Promise<object> {
   const msg = await this.config.apiClient.processRequest(this.startValidateMethod(endpoint, startobject));
