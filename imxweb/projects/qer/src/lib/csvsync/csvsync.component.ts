@@ -64,6 +64,8 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   progress: number = 0;
   estimatedRemainingTime: string;
   ShowErrors: boolean = true;
+  cancelValidate: boolean = false; // Canceles the validate() function
+  cancelCheck: boolean = false; // Checks if the validation process has been canceled.
 
   constructor(
     private dialog: MatDialog,
@@ -128,7 +130,14 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   }
 
   dialogClose() {
-    this.dialogHide = true;
+    if (this.validating){
+      this.cancelValidate = true;
+      this.cancelCheck = true;
+      this.dialogHide = true;
+    }else{
+      this.cancelCheck = false;
+      this.dialogHide = true;
+    }
   }
 
   replaceCsv() {
@@ -574,6 +583,9 @@ public async validate(endpoint: string, columnMapping: any): Promise<void> {
   let estimatedRemainingSecs = 0;
 
   for (const [rowIndex, csvRow] of this.csvDataSource.data.entries()) { // Validate all rows
+    if (this.cancelValidate) {  
+      break;
+    }
     const rowToValidate: any = {};
     Object.keys(columnMapping).forEach(colIndex => {
       const columnName = columnMapping[colIndex];
@@ -619,6 +631,7 @@ public async validate(endpoint: string, columnMapping: any): Promise<void> {
     }
   }
 
+  this.cancelValidate = false;
   this.validating = false;
   console.log(this.allvalidated);
   this.cdr.detectChanges();

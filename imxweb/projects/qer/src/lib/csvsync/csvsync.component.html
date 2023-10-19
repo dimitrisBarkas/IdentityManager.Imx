@@ -1,6 +1,4 @@
-
 <div class="overlay" *ngIf="loadingValidation || loadingImport"></div>
-
 <div *ngIf="functionObjectsCount > 0 && BulkActionsCofigParamCount > 0">
   <h1 class="mat-headline">Bulk Actions</h1>
   <eui-alert *ngIf="!fileLoaded" class="imx-helper-alert" type="info" condensed="true" [colored]="true" [dismissable]="true">
@@ -14,7 +12,6 @@
   <!--<eui-alert *ngIf="fileLoaded && allRowsValidated && !validating && !initializing && numberOfErrors === 0" class="imx-helper-alert" type="success" condensed="true" [colored]="true" [dismissable]="true">
     <span>You can submit your CSV to the database.</span>
   </eui-alert>
-
   <eui-alert *ngIf="numberOfErrors > 0" class="imx-helper-alert" type="error" condensed="true" [colored]="true" [dismissable]="true">
     <span>There are errors in your CSV data at: {{ getErrorRowsAndHeaders() }}. Please select another CSV file.</span>
   </eui-alert>-->
@@ -32,19 +29,12 @@
 
     <mat-slide-toggle
     class="ToggleErrors"
-    [color]="ShowErrors ? 'warn' : 'warn'"
+    [color]="ShowErrors ? 'primary' : 'primary'"
     [checked]="ShowErrors"
-    [disabled]="validating || initializing || !fileLoaded || loadingValidation || numberOfErrors === 0"
+    [disabled]="validating || initializing || !fileLoaded || loadingValidation || numberOfErrors === 0 || cancelCheck"
     (change)="toggleErrors()">
     {{ ShowErrors ? 'Hide Errors' : 'Show Errors' }}
     </mat-slide-toggle>
-<!--     <button mat-raised-button 
-    class="ToggleErrors"    
-    [disabled]="validating || initializing || !fileLoaded || loadingValidation || numberOfErrors === 0"
-    (click)="toggleErrors()">
-    Show Errors
-    </button> -->
-
   </div>
 <div>
   <mat-form-field appearance="outline" class="search-width">
@@ -84,7 +74,7 @@
 
         <!-- Header and Rows -->     
         <tr mat-header-row *matHeaderRowDef="headers"></tr>
-        <tr mat-row *matRowDef="let row; columns: headers; let rowIndex = index" [class.not-show]="numberOfErrors > 0 && !isRowError(rowIndex) && ShowErrors" [class.error-row]="isRowError(rowIndex)">
+        <tr mat-row *matRowDef="let row; columns: headers; let rowIndex = index" [class.not-show]="numberOfErrors > 0 && !isRowError(rowIndex) && ShowErrors && !cancelCheck" [class.error-row]="isRowError(rowIndex)">
         </tr>
 
       </table>
