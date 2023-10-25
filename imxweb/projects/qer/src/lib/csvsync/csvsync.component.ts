@@ -26,7 +26,6 @@ export interface PreValidationElement{
 
 
 
-
 @Component({
   selector: 'imx-csvsync',
   templateUrl: './csvsync.component.html',
@@ -35,7 +34,9 @@ export interface PreValidationElement{
 export class CsvsyncComponent implements OnInit, AfterViewInit {
 
   startValidateObj: any;
+  startImportObj: any;
   preValidateMsg: object = {message:'', permission: false};
+  preImportMsg: object = {message:'', permission: false};
   totalRows: number = 0;
   allRowsValidated: boolean = false;
   validationResults$ = new BehaviorSubject<ValidationElement[]>([]);
@@ -75,6 +76,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   cancelValidate: boolean = false; // Canceles the validate() function
   cancelCheck: boolean = false; // Checks if the validation process has been canceled.
   initialPageEvent = new PageEvent();
+  processing: boolean = false;
 
   constructor(
     private dialog: MatDialog,
@@ -364,23 +366,25 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
     const inputParameters: any[] = [];
     const csvData = this.csvDataSource.data;
     const results: PeriodicElement[] = [];
-    this.validating = true;
+    this.processing = true;
 
-    // Get the mapping object from the mapping function
-    const mappingObject = await this.mapping(endpoint);
     let totalTimeTaken = 0; // Total time taken for processing rows
     let estimatedRemainingSecs = 0;
+
+    // Create an array of sanitized headers
+    const sanitizedHeaders = this.headers.map(header => header.replace(/\s/g, '_'));
+
     for (const csvRow of csvData) {
       const inputParameterName: any = {};
 
-      for (const csvColumn in mappingObject) {
-        const dbColumn = mappingObject[csvColumn];
-        const cleanCellValue = typeof csvRow[csvColumn] === 'string'
-          ? csvRow[csvColumn].replace(/[\r\n]+/g, '').trim()
-          : csvRow[csvColumn];
-
-        inputParameterName[dbColumn] = cleanCellValue;
-      }
+      // Iterate over the sanitized headers to set the keys in the inputParameter object
+      sanitizedHeaders.forEach((sanitizedHeader, index) => {
+        const cleanCellValue =
+          typeof csvRow[index] === 'string'
+            ? csvRow[index].replace(/[\r\n]+/g, '').trim()
+            : csvRow[index];
+        inputParameterName[sanitizedHeader] = cleanCellValue;
+      });
 
       inputParameters.push(inputParameterName);
     }
@@ -409,12 +413,12 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
         this.progress = (this.processedRows / this.totalRows) * 100;
         this.estimatedRemainingTime = this.formatTime(estimatedRemainingSecs);
         this.processedRows++;
-
+        
       }
     }
 
     this.allRowsValidated = false;
-
+    
     setTimeout(() => {
 
       this.loadingImport = false;
@@ -560,12 +564,20 @@ public async onValidate(endpoint: string): Promise<void> {
   this.startValidateObj = this.getStartValidateData(endpoint, {totalRows: this.totalRows});
 }
 
+public async onImport(endpoint: string): Promise<void>{
+  this.startImportObj = this.getStartImportData(endpoint, {totalRows: this.totalRows});
+}
+
 public async beginValidation(endpoint: string): Promise<void> {
   this.preValidateDialog = false;
   this.shouldValidate = true;
   await this.validate(endpoint);
   this.allRowsValidated = this.checkAllRowsValidated(); // Call the new method after validation
   this.validateDialog = true;
+}
+
+public async beginImport(endpoint: string): Promise<void>{
+  await this.importToDatabase(endpoint);
 }
 
 public async validate(endpoint: string): Promise<void> {
@@ -707,7 +719,6 @@ public async getStartValidateData(endpoint: string, startobject: any): Promise<o
   this.preValidateMsg = msg;
   console.log(msg);
   console.log(msg.permission);
-
   if (msg.permission === true) {
     this.beginValidation(endpoint);
   }
@@ -718,6 +729,39 @@ public async getStartValidateData(endpoint: string, startobject: any): Promise<o
 private startValidateMethod(endpoint: string, startobject: any): MethodDescriptor<PreValidationElement> {
   return {
     path: `/portal/bulkactions/${endpoint}/startvalidate`,
+    parameters: [
+      {
+        name: 'startobject',
+        value: startobject,
+        in: 'body'
+      },
+    ],
+    method: 'POST',
+    headers: {
+      'imx-timezone': TimeZoneInfo.get(),
+    },
+    credentials: 'include',
+    observe: 'response',
+    responseType: 'json'
+  };
+}
+
+public async getStartImportData(endpoint: string, startobject: any): Promise<object> {
+  const importmsg = await this.config.apiClient.processRequest(this.startImportMethod(endpoint, startobject));
+  this.preImportMsg = importmsg;
+ if (importmsg.permission === true) {
+    this.beginImport(endpoint);
+    this.dialogHide = true;
+  }
+  else{
+    this.dialogHide = false;
+  } 
+  return importmsg;
+ }
+
+private startImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreValidationElement> {
+  return {
+    path: `/portal/bulkactions/${endpoint}/startimport`,
     parameters: [
       {
         name: 'startobject',
