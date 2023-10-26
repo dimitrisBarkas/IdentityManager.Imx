@@ -35,7 +35,9 @@ export interface PreValidationElement{
 export class CsvsyncComponent implements OnInit, AfterViewInit {
 
   startValidateObj: any;
+  startImportObj: any;
   preValidateMsg: object = {message:'', permission: false};
+  preImportMsg: object = {message:'', permission: false};
   totalRows: number = 0;
   allRowsValidated: boolean = false;
   validationResults$ = new BehaviorSubject<ValidationElement[]>([]);
@@ -75,6 +77,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   cancelValidate: boolean = false; // Canceles the validate() function
   cancelCheck: boolean = false; // Checks if the validation process has been canceled.
   initialPageEvent = new PageEvent();
+  processing: boolean = false;
 
   constructor(
     private dialog: MatDialog,
@@ -364,8 +367,8 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
     const inputParameters: any[] = [];
     const csvData = this.csvDataSource.data;
     const results: PeriodicElement[] = [];
-    this.validating = true;
-    
+    this.processing = true;
+
     let totalTimeTaken = 0; // Total time taken for processing rows
     let estimatedRemainingSecs = 0;
 
@@ -374,18 +377,21 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
 
     for (const csvRow of csvData) {
       const inputParameterName: any = {};
+
       // Iterate over the sanitized headers to set the keys in the inputParameter object
       sanitizedHeaders.forEach((sanitizedHeader, index) => {
         const cleanCellValue =
           typeof csvRow[index] === 'string'
             ? csvRow[index].replace(/[\r\n]+/g, '').trim()
             : csvRow[index];
-            inputParameterName[sanitizedHeader] = cleanCellValue;
+        inputParameterName[sanitizedHeader] = cleanCellValue;
       });
 
       inputParameters.push(inputParameterName);
     }
+
     for (const inputParameter of inputParameters) {
+
       const startTime = performance.now();
       console.log(inputParameter);
       try {
@@ -394,12 +400,36 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
       } catch (error) {
         console.error(`Error submitting CSV data: ${error}`);
       } finally {
+
+
         const endTime = performance.now();
         const timeTaken = endTime - startTime;
         totalTimeTaken += timeTaken;
-         return results;
+
+        // Calculate the average time taken per row
+        const averageTimePerRow = totalTimeTaken / (this.processedRows + 1);
+
+        estimatedRemainingSecs = (averageTimePerRow * (this.totalRows - this.processedRows - 1)) / 1000; // Convert to seconds
+        // Calculate the progress and update the progress bar
+        this.progress = (this.processedRows / this.totalRows) * 100;
+        this.estimatedRemainingTime = this.formatTime(estimatedRemainingSecs);
+        this.processedRows++;
+        
       }
     }
+
+    this.allRowsValidated = false;
+    
+    setTimeout(() => {
+
+      this.loadingImport = false;
+      this.progress = 0;
+      this.processedRows = 0;
+      this.estimatedRemainingTime = null;
+
+    });
+
+    return results;
   }
 
 private PostObject(endpoint: string, inputParameterName: any): MethodDescriptor<PeriodicElement> {
@@ -535,12 +565,20 @@ public async onValidate(endpoint: string): Promise<void> {
   this.startValidateObj = this.getStartValidateData(endpoint, {totalRows: this.totalRows});
 }
 
+public async onImport(endpoint: string): Promise<void>{
+  this.startImportObj = this.getStartImportData(endpoint, {totalRows: this.totalRows});
+}
+
 public async beginValidation(endpoint: string): Promise<void> {
   this.preValidateDialog = false;
   this.shouldValidate = true;
   await this.validate(endpoint);
   this.allRowsValidated = this.checkAllRowsValidated(); // Call the new method after validation
   this.validateDialog = true;
+}
+
+public async beginImport(endpoint: string): Promise<void>{
+  await this.importToDatabase(endpoint);
 }
 
 public async validate(endpoint: string): Promise<void> {
@@ -710,6 +748,38 @@ private startValidateMethod(endpoint: string, startobject: any): MethodDescripto
   };
 }
 
+public async getStartImportData(endpoint: string, startobject: any): Promise<object> {
+  const importmsg = await this.config.apiClient.processRequest(this.startImportMethod(endpoint, startobject));
+  this.preImportMsg = importmsg;
+ if (importmsg.permission === true) {
+    this.beginImport(endpoint);
+    this.dialogHide = true;
+  }
+  else{
+    this.dialogHide = false;
+  } 
+  return importmsg;
+ }
+
+private startImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreValidationElement> {
+  return {
+    path: `/portal/bulkactions/${endpoint}/startimport`,
+    parameters: [
+      {
+        name: 'startobject',
+        value: startobject,
+        in: 'body'
+      },
+    ],
+    method: 'POST',
+    headers: {
+      'imx-timezone': TimeZoneInfo.get(),
+    },
+    credentials: 'include',
+    observe: 'response',
+    responseType: 'json'
+  };
+}
 
 private countObjectsWithFunctionKey(data: any): number {
   if (!data || (Array.isArray(data) && data.length === 0)) {
