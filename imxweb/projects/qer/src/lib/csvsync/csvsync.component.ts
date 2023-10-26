@@ -40,12 +40,14 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   preImportMsg: object = {message:'', permission: false};
   totalRows: number = 0;
   allRowsValidated: boolean = false;
+  allRowsImported: boolean = false;
   validationResults$ = new BehaviorSubject<ValidationElement[]>([]);
   @ViewChild(MatPaginator) paginator: MatPaginator;
   csvDataSource: MatTableDataSource<any> = new MatTableDataSource();
   csvData: any[] = [];
   fileLoaded: boolean = false;
   dialogHide: boolean = true;
+  importDialogHide: boolean = true;
   hardError: string = '';
   headers: string[] = [];
   validationResponses: any[] = [];
@@ -59,6 +61,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   shouldValidate: boolean = false;
   preValidateDialog: boolean = false;
   validateDialog: boolean = false;
+  importDialog: boolean = false;
   numberOfErrors: number;
   searchControl = new FormControl({value: '', disabled: true});
   loadingValidation = false;
@@ -146,9 +149,11 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
       this.cancelValidate = true;
       this.cancelCheck = true;
       this.dialogHide = true;
+      this.importDialogHide = true;
     }else{
       this.cancelCheck = false;
       this.dialogHide = true;
+      this.importDialogHide = true;
     }
   }
 
@@ -200,6 +205,11 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   }
 
   checkAllRowsValidated(): boolean {
+    // All rows are validated if there are no errors
+    return this.numberOfErrors === 0;
+  }
+
+  checkAllRowsImported(): boolean {
     // All rows are validated if there are no errors
     return this.numberOfErrors === 0;
   }
@@ -428,7 +438,7 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
       this.estimatedRemainingTime = null;
 
     });
-
+    this.allRowsImported = true;
     return results;
   }
 
@@ -579,6 +589,8 @@ public async beginValidation(endpoint: string): Promise<void> {
 
 public async beginImport(endpoint: string): Promise<void>{
   await this.importToDatabase(endpoint);
+  this.allRowsImported = this.checkAllRowsImported(); // Call the new method after import
+  this.importDialog = true;
 }
 
 public async validate(endpoint: string): Promise<void> {
@@ -753,11 +765,8 @@ public async getStartImportData(endpoint: string, startobject: any): Promise<obj
   this.preImportMsg = importmsg;
  if (importmsg.permission === true) {
     this.beginImport(endpoint);
-    this.dialogHide = true;
   }
-  else{
-    this.dialogHide = false;
-  } 
+  this.importDialogHide = false;
   return importmsg;
  }
 
