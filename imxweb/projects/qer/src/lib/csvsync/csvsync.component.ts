@@ -79,12 +79,8 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   initialPageEvent = new PageEvent();
   processing: boolean = false;
   validationDialog: boolean = false;
-  importDialog: boolean = false;
   styleElement: HTMLStyleElement;
   colors : Array<string> = ["#6a6a6a", "#B7B7B7"];
-  cancelCheck: boolean = false; // Checks if the validation process has been canceled.
-  initialPageEvent = new PageEvent();
-  processing: boolean = false;
 
   constructor(
     private dialog: MatDialog,
