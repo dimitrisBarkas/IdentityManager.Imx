@@ -88,6 +88,7 @@
     </button>
     <button
       mat-raised-button
+
       [disabled]="!fileLoaded || selectedOptionKey === null || loadingValidation || loadingImport"
       color="accent"
       (click)="onValidate(selectedOptionKey)"
@@ -105,6 +106,7 @@
   </div>
 
   <div *ngIf="!dialogHide" class="loading-container">
+
 
     <div *ngIf="validationDialog && !importDialog">
       <div *ngIf="loadingValidation || loadingImport || validateDialog" class="loading-wrapper">
@@ -128,6 +130,7 @@
           <span *ngIf="validating">{{processedRows}} of {{totalRows}}</span>
           <span *ngIf="!validating">{{totalRows}} of {{totalRows}}</span>
         </p>
+
         <mat-progress-bar class="progress-style" mode="determinate" [value]="validating ? progress : '100' "></mat-progress-bar>
         <p class="validation-details">{{preValidateMsg.message}}</p>
 
@@ -154,6 +157,7 @@
     </div>
 
     <div *ngIf="!validationDialog && importDialog" class="loading-wrapper">
+
       <div *ngIf="loadingImport">
         <h2>Importing...</h2>
         <p class="warning">Please do not close the browser</p>
@@ -188,6 +192,4 @@
     </div>
 
   </div>
-</div>
-
 

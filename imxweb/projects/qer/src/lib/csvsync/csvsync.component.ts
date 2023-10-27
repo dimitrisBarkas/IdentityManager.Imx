@@ -24,8 +24,6 @@ export interface PreValidationElement{
   permission: boolean;
 }
 
-
-
 @Component({
   selector: 'imx-csvsync',
   templateUrl: './csvsync.component.html',
@@ -59,6 +57,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   shouldValidate: boolean = false;
   preValidateDialog: boolean = false;
   validateDialog: boolean = false;
+  importDialog: boolean = false;
   numberOfErrors: number;
   searchControl = new FormControl({value: '', disabled: true});
   loadingValidation = false;
@@ -83,6 +82,9 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   importDialog: boolean = false;
   styleElement: HTMLStyleElement;
   colors : Array<string> = ["#6a6a6a", "#B7B7B7"];
+  cancelCheck: boolean = false; // Checks if the validation process has been canceled.
+  initialPageEvent = new PageEvent();
+  processing: boolean = false;
 
   constructor(
     private dialog: MatDialog,
@@ -233,6 +235,11 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   }
 
   checkAllRowsValidated(): boolean {
+    // All rows are validated if there are no errors
+    return this.numberOfErrors === 0;
+  }
+
+  checkAllRowsImported(): boolean {
     // All rows are validated if there are no errors
     return this.numberOfErrors === 0;
   }
@@ -453,6 +460,7 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
         
       }
     }
+
     this.cancelImport = false;
     this.allRowsValidated = false;
     this.allRowsImported = true;
@@ -465,7 +473,6 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
       this.estimatedRemainingTime = null;
 
     });
-
     return results;
   }
 
@@ -618,6 +625,9 @@ public async beginValidation(endpoint: string): Promise<void> {
 
 public async beginImport(endpoint: string): Promise<void>{
   await this.importToDatabase(endpoint);
+  this.allRowsImported = this.checkAllRowsImported(); // Call the new method after import
+  this.importDialog = true;
+
 }
 
 public async validate(endpoint: string): Promise<void> {
@@ -646,7 +656,7 @@ public async validate(endpoint: string): Promise<void> {
   for (const [rowIndex, csvRow] of this.csvData.entries()) { // Validate all rows
 
     if (this.cancelValidate) { 
-      this.allRowsValidated = false; 
+      this.allRowsValidated = false;
       break;
     }
 
@@ -820,7 +830,6 @@ private startImportMethod(endpoint: string, startobject: any): MethodDescriptor<
   };
 }
 
-
 private countObjectsWithFunctionKey(data: any): number {
   if (!data || (Array.isArray(data) && data.length === 0)) {
     return 0; // Return 0 if data is undefined, null, or an empty array
@@ -884,7 +893,9 @@ openConfirmationDialog(): void {
     }
   });
 }
+
 }
+
 
 
 
