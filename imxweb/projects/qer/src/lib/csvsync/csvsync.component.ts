@@ -24,9 +24,6 @@ export interface PreValidationElement{
   permission: boolean;
 }
 
-
-
-
 @Component({
   selector: 'imx-csvsync',
   templateUrl: './csvsync.component.html',
@@ -47,7 +44,6 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   csvData: any[] = [];
   fileLoaded: boolean = false;
   dialogHide: boolean = true;
-  importDialogHide: boolean = true;
   hardError: string = '';
   headers: string[] = [];
   validationResponses: any[] = [];
@@ -78,6 +74,14 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   estimatedRemainingTime: string;
   ShowErrors: boolean = true;
   cancelValidate: boolean = false; // Canceles the validate() function
+  cancelImport: boolean = false;
+  cancelCheck: boolean = false; // Checks if the validation process has been canceled.
+  initialPageEvent = new PageEvent();
+  processing: boolean = false;
+  validationDialog: boolean = false;
+  importDialog: boolean = false;
+  styleElement: HTMLStyleElement;
+  colors : Array<string> = ["#6a6a6a", "#B7B7B7"];
   cancelCheck: boolean = false; // Checks if the validation process has been canceled.
   initialPageEvent = new PageEvent();
   processing: boolean = false;
@@ -118,6 +122,9 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.authentication.update();
     this.cdr.detectChanges();
 
+    this.styleElement = document.createElement('style');
+    this.changeColors(); // Change the colors of the progress bar
+
     console.log(this.allvalidated)
     console.log(this.validating)
   }
@@ -128,6 +135,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.processedRows = 0;
     this.selectedOptionKey = null;
     this.allRowsValidated = false;
+    this.allRowsImported = false;
     this.validationResults$.next([]);
     this.csvDataSource = new MatTableDataSource();
     this.csvData = [];
@@ -149,12 +157,34 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
       this.cancelValidate = true;
       this.cancelCheck = true;
       this.dialogHide = true;
-      this.importDialogHide = true;
+    }else if (this.loadingImport){
+      this.cancelImport = true;
+      this.dialogHide = true;
     }else{
       this.cancelCheck = false;
       this.dialogHide = true;
-      this.importDialogHide = true;
     }
+    this.validationDialog = false;
+    this.importDialog = false;
+  }
+
+  changeColors() {
+    const head = document.getElementsByTagName('head')[0];
+    const css = `
+    .progress-style .mat-progress-bar-fill::after {
+      background-color: ${this.colors[0]} !important;
+    }
+  
+    .progress-style .mat-progress-bar-buffer {
+      background-color: ${this.colors[1]} !important; 
+    }
+    
+    `;
+    this.styleElement.innerHTML = '';
+    this.styleElement.type = 'text/css';
+    this.styleElement.appendChild(document.createTextNode(css));
+    head.appendChild(this.styleElement);
+  
   }
 
   replaceCsv() {
@@ -401,7 +431,10 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
     }
 
     for (const inputParameter of inputParameters) {
-
+      if (this.cancelImport) {  
+        this.allRowsImported = false;
+        break;
+      }
       const startTime = performance.now();
       console.log(inputParameter);
       try {
@@ -428,17 +461,18 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
       }
     }
 
+    this.cancelImport = false;
     this.allRowsValidated = false;
+    this.allRowsImported = true;
     
     setTimeout(() => {
-
+      console.log("timeout");
       this.loadingImport = false;
       this.progress = 0;
       this.processedRows = 0;
       this.estimatedRemainingTime = null;
 
     });
-    this.allRowsImported = true;
     return results;
   }
 
@@ -570,12 +604,14 @@ private async validateNoDuplicates(columnMapping: any): Promise<void> {
 
 
 public async onValidate(endpoint: string): Promise<void> {
+  this.validationDialog = true;
   this.shouldValidate = true;
   this.preValidateDialog = true;
   this.startValidateObj = this.getStartValidateData(endpoint, {totalRows: this.totalRows});
 }
 
 public async onImport(endpoint: string): Promise<void>{
+  this.importDialog = true;
   this.startImportObj = this.getStartImportData(endpoint, {totalRows: this.totalRows});
 }
 
@@ -591,6 +627,7 @@ public async beginImport(endpoint: string): Promise<void>{
   await this.importToDatabase(endpoint);
   this.allRowsImported = this.checkAllRowsImported(); // Call the new method after import
   this.importDialog = true;
+
 }
 
 public async validate(endpoint: string): Promise<void> {
@@ -618,7 +655,8 @@ public async validate(endpoint: string): Promise<void> {
 
   for (const [rowIndex, csvRow] of this.csvData.entries()) { // Validate all rows
 
-    if (this.cancelValidate) {  
+    if (this.cancelValidate) { 
+      this.allRowsValidated = false;
       break;
     }
 
@@ -732,7 +770,6 @@ public async getStartValidateData(endpoint: string, startobject: any): Promise<o
   this.preValidateMsg = msg;
   console.log(msg);
   console.log(msg.permission);
-
   if (msg.permission === true) {
     this.beginValidation(endpoint);
   }
@@ -765,8 +802,11 @@ public async getStartImportData(endpoint: string, startobject: any): Promise<obj
   this.preImportMsg = importmsg;
  if (importmsg.permission === true) {
     this.beginImport(endpoint);
+    this.dialogHide = false;
   }
-  this.importDialogHide = false;
+  else{
+    this.dialogHide = false;
+  } 
   return importmsg;
  }
 
@@ -855,5 +895,9 @@ openConfirmationDialog(): void {
 }
 
 }
+
+
+
+
 
 
