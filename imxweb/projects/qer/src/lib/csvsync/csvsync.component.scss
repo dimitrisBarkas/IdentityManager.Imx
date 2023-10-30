@@ -106,7 +106,6 @@ td.mat-cell {
   border-top: $black-c 1px solid;
   flex-wrap: wrap;
   position: relative;
-
   > * {
     margin-left: 10px;
     margin-top: 10px;
@@ -120,7 +119,6 @@ td.mat-cell {
 .error {
   color: red;
 }
-
 
 .imx-helper-alert {
   display: block;
@@ -162,7 +160,6 @@ td.mat-cell {
 
 
 .loading-container {
-
   background-color: rgba(0, 0, 0, 0.3); /* Dark background for the whole page */
   position: fixed;
   top: 0;
@@ -302,4 +299,3 @@ td.mat-cell {
 .WarningForBrowser {
   color: red;
 }
-

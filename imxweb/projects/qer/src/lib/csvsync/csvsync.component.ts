@@ -383,7 +383,6 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
 
     for (const csvRow of csvData) {
       const inputParameterName: any = {};
-
       // Iterate over the sanitized headers to set the keys in the inputParameter object
       sanitizedHeaders.forEach((sanitizedHeader, index) => {
         const cleanCellValue =
@@ -569,13 +568,11 @@ private async validateNoDuplicates(columnMapping: any): Promise<void> {
 
 
 public async onValidate(endpoint: string): Promise<void> {
-
   this.allRowsValidated = false;
   this.shouldValidate = true;
   this.preValidateDialog = true;
   this.startValidateObj = this.getStartValidateData(endpoint, {totalRows: this.totalRows});
 }
-
 
 public async onSubmit(endpoint: string): Promise<void> {
   this.shouldValidate = true;
@@ -728,7 +725,6 @@ private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<Vali
   };
 }
 
-
 public async getStartValidateData(endpoint: string, startobject: any): Promise<object> {
   const msg = await this.config.apiClient.processRequest(this.startValidateMethod(endpoint, startobject));
   this.preActionMsg = msg;
@@ -780,7 +776,6 @@ private startValidateMethod(endpoint: string, startobject: any): MethodDescripto
     responseType: 'json'
   };
 }
-
 
 private startImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
   return {
@@ -882,4 +877,3 @@ openConfirmationDialog(): void {
 }
 
 }
-
