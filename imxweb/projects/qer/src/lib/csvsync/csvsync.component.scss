@@ -215,9 +215,7 @@ td.mat-cell {
         color: green;
         font-weight: 400;
       }
-
       p {margin-top: 10px;}
-
     }
 
     .errors,
@@ -226,10 +224,8 @@ td.mat-cell {
       
       h1 {font-weight: 400;}
       p {
-
         margin-top: 5px;
         &.warning {margin-top: 5px;}
-
         span {
           font-weight: 600;
           font-size: 20px;
@@ -255,9 +251,7 @@ td.mat-cell {
        // &:hover {
          // cursor: pointer;
        // }
-
       }
-
     }
 
     .dialog-body {

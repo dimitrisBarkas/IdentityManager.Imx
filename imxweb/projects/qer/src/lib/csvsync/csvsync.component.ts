@@ -9,12 +9,10 @@ import { FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 
-
 export interface PeriodicElement {
   permission: boolean;
   message: string;
 }
-
 
 export interface ValidationElement{
   rowIndex: number;
@@ -27,17 +25,12 @@ export interface PreActionElement{
   permission: boolean;
 }
 
-
-
-
 @Component({
   selector: 'imx-csvsync',
   templateUrl: './csvsync.component.html',
   styleUrls: ['./csvsync.component.scss'],
 })
 export class CsvsyncComponent implements OnInit, AfterViewInit {
-
-
   startValidateObj: object;
   startImportObj: object;
   endImportObj: object;
@@ -100,18 +93,14 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
           console.error('ConfigurationParameters() returned an undefined or null object.');
         }
       });
-
     }
 
   public async ngOnInit(): Promise<void>  {
-
     this.selectedOptionKey = null;
     this.numberOfErrors = 0;
     this.loadingValidation = false;
     this.loadingImport = false;
-
     this.processing = true;
-
     this.allvalidated = false;
     await this.ConfigurationParameters();
     await this.getAERoleforCsvImporter(); // Wait for data to be fetched
@@ -120,14 +109,10 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.BulkActionsCofigParamCount = await this.countPropertiesInConfigurationParameters();
     this.functionObjectsCount = this.countObjectsWithFunctionKey(this.dataSource);
     console.log("Number of objects with 'Function' property:", this.functionObjectsCount);
-
     this.authentication.update();
     this.cdr.detectChanges();
-
     console.log(this.allvalidated)
-
     console.log(this.processing)
-
   }
 
   ngOnDestroy() {
@@ -136,9 +121,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.processedRows = 0;
     this.selectedOptionKey = null;
     this.allRowsValidated = false;
-
     this.allImported = false;
-
     this.validationResults$.next([]);
     this.csvDataSource = new MatTableDataSource();
     this.csvData = [];
@@ -149,23 +132,18 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.CsvImporter = [];
     this.allvalidated = false;
     this.visibleRows = [];
-
     this.processing = false;
-
     this.initializing = false;
     this.shouldValidate = false;
     this.numberOfErrors = 0;
   }
 
   dialogClose() {
-
     if (this.processing){
       this.cancelAction = true;
       this.cancelCheck = true;
-      
     }else{
       this.cancelCheck = false;
-      
     }
     this.importError = false;
     this.importErrorMsg = '';
@@ -180,24 +158,19 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.importError = false;
     this.hardError = '';
     this.importErrorMsg = '';
-
     this.totalRows = 0;
     this.processedRows = 0;
     this.fileLoaded = false;
     this.allvalidated = false;
-
     this.allImported = false;
     this.allRowsValidated = false;
     this.processing = false;
-
     this.csvData = [];
     this.headers = [];
     this.csvDataSource.data = [];
     this.validationResponses = [];
     this.validationResults = [];
     this.validationResults$.next([]);
-
-
     this.numberOfErrors = 0;
     this.visibleRows = [];
     this.shouldValidate = false;
@@ -243,8 +216,6 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.processing = true;
     setTimeout(() => {
       this.csvDataSource.paginator = this.paginator;
-      
-
       this.cdr.detectChanges();
       if (this.paginator) {
         // Create a new PageEvent and manually trigger the page change event
@@ -403,7 +374,6 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
     const inputParameters: any[] = [];
     const csvData = this.csvDataSource.data;
     const results: PeriodicElement[] = [];
-
     this.processing = true;
 
     let totalTimeTaken = 0; // Total time taken for processing rows
@@ -423,20 +393,15 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
             : csvRow[index];
         inputParameterName[sanitizedHeader] = cleanCellValue;
       });
-
-
       inputParameters.push(inputParameterName);
     }
 
     for (const inputParameter of inputParameters) {
-
       const startTime = performance.now();
       console.log(inputParameter);
       try {
         const data = await this.config.apiClient.processRequest(this.PostObject(endpoint, inputParameter));
-
         console.log('>>>>>>>>>>>>>>>>>>>'+ data.permission)
-
         if (this.cancelAction) {  
           break;
         }
@@ -445,14 +410,10 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
           this.importErrorMsg = data.message;
           break;
         }
-
         results.push(data);
       } catch (error) {
         console.error(`Error submitting CSV data: ${error}`);
       } finally {
-
-        
-
         const endTime = performance.now();
         const timeTaken = endTime - startTime;
         totalTimeTaken += timeTaken;
@@ -467,22 +428,15 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
         this.processedRows++;
       }
     }
-
     this.allRowsValidated = false;
-
     this.allImported = true;
     this.processing = false;
-
-
     setTimeout(() => {
-
       this.loadingImport = false;
       this.progress = 0;
       this.processedRows = 0;
       this.estimatedRemainingTime = null;
-
     });
-
     return results;
   }
 
@@ -614,14 +568,11 @@ private async validateNoDuplicates(columnMapping: any): Promise<void> {
 
 
 public async onValidate(endpoint: string): Promise<void> {
-
   this.allRowsValidated = false;
-
   this.shouldValidate = true;
   this.preValidateDialog = true;
   this.startValidateObj = this.getStartValidateData(endpoint, {totalRows: this.totalRows});
 }
-
 
 public async onSubmit(endpoint: string): Promise<void> {
   this.shouldValidate = true;
@@ -645,39 +596,29 @@ public async beginImport(endpoint: string): Promise<void> {
 }
 
 public async validate(endpoint: string): Promise<void> {
-
   this.processing = true;
   this.allImported = false;
-
   this.loadingValidation = true;
   if(this.initializing || !this.shouldValidate) {
     setTimeout(() => {
       this.loadingValidation = false;
-
     });
     return;
   }
   this.validationResults = []; // Clear the previous validation results
   this.allvalidated = true;
-  
   this.numberOfErrors = 0; // Reset the error count before new validation
   this.hardError = ''; //Clear the hardError message
-
   //const NoDuplicates = await this.notes(endpoint);
   //await this.validateNoDuplicates(NoDuplicates);
-
-
 
   let totalTimeTaken = 0; // Total time taken for processing rows
   let estimatedRemainingSecs = 0;
 
   for (const [rowIndex, csvRow] of this.csvData.entries()) { // Validate all rows
-
-
     if (this.cancelAction) {  
       break;
     }
-
     const sanitizedHeaders: string[] = [];
     const rowToValidate: any = {
       HeaderNames: sanitizedHeaders
@@ -701,9 +642,7 @@ public async validate(endpoint: string): Promise<void> {
       if (validationResponse.error) {
         console.log(`Validation error found: ${validationResponse.error}`);
         this.hardError = validationResponse.error;
-
         this.processing = false;
-
         this.cdr.detectChanges();
         setTimeout(() => {
           this.allRowsValidated = false;
@@ -745,10 +684,8 @@ public async validate(endpoint: string): Promise<void> {
       this.processedRows++;
     }
   }
-
   this.cancelAction = false; 
   this.processing = false;
-
   console.log(this.allvalidated);
   this.csvDataSource.paginator._changePageSize(this.totalRows);
   this.cdr.detectChanges();
@@ -789,12 +726,9 @@ private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<Vali
 
 public async getStartValidateData(endpoint: string, startobject: any): Promise<object> {
   const msg = await this.config.apiClient.processRequest(this.startValidateMethod(endpoint, startobject));
-
   this.preActionMsg = msg;
-
   console.log(msg);
   console.log(msg.permission);
-
   if (msg.permission === true) {
     this.beginValidation(endpoint);
   }
@@ -816,18 +750,13 @@ public async getEndImportData(endpoint: string, startobject: any): Promise<objec
   const msg = await this.config.apiClient.processRequest(this.endImportMethod(endpoint, startobject));
   this.preActionMsg = msg;
   console.log(msg.message)
-
   if (!this.cancelCheck) {
     this.dialogHide = false;
   }
-  
   return msg;
 }
 
-
-
 private startValidateMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
-
   return {
     path: `/portal/bulkactions/${endpoint}/startvalidate`,
     parameters: [
@@ -846,7 +775,6 @@ private startValidateMethod(endpoint: string, startobject: any): MethodDescripto
     responseType: 'json'
   };
 }
-
 
 private startImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
   return {
@@ -892,7 +820,6 @@ private countObjectsWithFunctionKey(data: any): number {
   if (!data || (Array.isArray(data) && data.length === 0)) {
     return 0; // Return 0 if data is undefined, null, or an empty array
   }
-
   if (Array.isArray(data)) {
     // If data is an array, count objects with "Function" or "function" keys
     return data.reduce((count, item) => {
@@ -902,11 +829,8 @@ private countObjectsWithFunctionKey(data: any): number {
     // If data is an object, check if it has "Function" or "function" keys
     return (data.hasOwnProperty("Function") || data.hasOwnProperty("function")) ? 1 : 0;
   }
-
   return 0; // Return 0 for other data types
 }
-
-
 
 public async getAERoleforCsvImporter(): Promise<void> {
   const CsvImporter = await this.config.apiClient.processRequest<string[]>(this.getWhoForCSV());
@@ -928,7 +852,6 @@ public async getAERoleforCsvImporter(): Promise<void> {
     responseType: 'json',
   };
 }
-
 
 openConfirmationDialog(): void {
   const selectedOptionValue = this.getObjectValues(this.configParams).find(
@@ -953,5 +876,3 @@ openConfirmationDialog(): void {
 }
 
 }
-
-
