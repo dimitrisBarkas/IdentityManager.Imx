@@ -738,7 +738,7 @@ public async getStartValidateData(endpoint: string, startobject: any): Promise<o
     this.beginValidation(endpoint);
   }
   this.dialogHide = false;
-  return msg;<<<<<<< bulk_actions_v1.2
+  return msg;
 }
 
 public async getStartImportData(endpoint: string, startobject: any): Promise<object> {

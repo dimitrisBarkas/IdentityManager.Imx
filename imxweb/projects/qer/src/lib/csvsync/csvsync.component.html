@@ -89,7 +89,7 @@
     </button>
     <button
       mat-raised-button
-      [disabled]="!fileLoaded || selectedOptionKey === null || loadingValidation || loadingImport"
+      [disabled]="!fileLoaded || selectedOptionKey === null || loadingValidation || loadingImport || allRowsImported"
       color="accent"
       (click)="onValidate(selectedOptionKey)"
     >
@@ -99,8 +99,7 @@
       mat-raised-button
       [disabled]="!allRowsValidated || processing || initializing || !fileLoaded || loadingValidation || loadingImport || cancelCheck"
       color="primary"
-      (click)="onSubmit(selectedOptionKey)"
-    >
+      (click)="onSubmit(selectedOptionKey)">
       Import to database
     </button>
   </div>
@@ -134,8 +133,10 @@
           <span *ngIf="processing">{{processedRows}} of {{totalRows}}</span>
           <span *ngIf="!processing && !hardError.length && !importError && numberOfErrors === 0">{{totalRows}} of {{totalRows}}</span>
         </p>
+
         <mat-progress-bar mode="determinate" [value]="processing ? progress : hardError.length || importError ? '33' : '100' "></mat-progress-bar>
         <p *ngIf="!importError" class="validation-details">{{preActionMsg.message}}</p>
+
 
         <div mat-dialog-actions class="button-wrapper">
           <div *ngIf="numberOfErrors === 0 && !hardError.length && !importError">
@@ -158,3 +159,4 @@
     </div>
   </div>
 </div>
+
