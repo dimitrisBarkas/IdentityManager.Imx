@@ -75,7 +75,6 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   importError: boolean = false;
   ShowErrors: boolean = true;
   cancelAction: boolean = false; // Canceles the validate() function
-
   cancelCheck: boolean = false; // Checks if the validation process has been canceled.
   initialPageEvent = new PageEvent();
 
@@ -428,10 +427,12 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
         this.processedRows++;
       }
     }
+
     this.allRowsValidated = false;
     this.allImported = true;
     this.processing = false;
     setTimeout(() => {
+
       this.loadingImport = false;
       this.progress = 0;
       this.processedRows = 0;
@@ -568,11 +569,13 @@ private async validateNoDuplicates(columnMapping: any): Promise<void> {
 
 
 public async onValidate(endpoint: string): Promise<void> {
+
   this.allRowsValidated = false;
   this.shouldValidate = true;
   this.preValidateDialog = true;
   this.startValidateObj = this.getStartValidateData(endpoint, {totalRows: this.totalRows});
 }
+
 
 public async onSubmit(endpoint: string): Promise<void> {
   this.shouldValidate = true;
@@ -593,6 +596,7 @@ public async beginImport(endpoint: string): Promise<void> {
   this.shouldValidate = true;
   await this.importToDatabase(endpoint);
   this.endImportObj = this.getEndImportData(endpoint, {totalRows: this.totalRows});
+
 }
 
 public async validate(endpoint: string): Promise<void> {
@@ -617,6 +621,7 @@ public async validate(endpoint: string): Promise<void> {
 
   for (const [rowIndex, csvRow] of this.csvData.entries()) { // Validate all rows
     if (this.cancelAction) {  
+
       break;
     }
     const sanitizedHeaders: string[] = [];
@@ -776,6 +781,7 @@ private startValidateMethod(endpoint: string, startobject: any): MethodDescripto
   };
 }
 
+
 private startImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
   return {
     path: `/portal/bulkactions/${endpoint}/startimport`,
@@ -876,3 +882,4 @@ openConfirmationDialog(): void {
 }
 
 }
+
