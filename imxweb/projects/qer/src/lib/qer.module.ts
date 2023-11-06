@@ -67,6 +67,7 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { ConfirmDialogComponent } from './csvsync/confirm-dialog/confirm-dialog.component';
 import { MatDialogModule } from '@angular/material/dialog';
+import { CsvsyncService } from './csvsync/csvsync.service';
 
 export function initConfig(config: QerService): () => Promise<any> {
   return () =>
@@ -141,7 +142,8 @@ const routes: Routes = [
       multi: true,
     },
     ServiceItemsService,
-    PatternItemService
+    PatternItemService,
+    CsvsyncService
   ],
 })
 export class QerModule {

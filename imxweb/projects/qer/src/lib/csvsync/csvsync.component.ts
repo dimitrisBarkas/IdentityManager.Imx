@@ -8,6 +8,8 @@ import { BehaviorSubject } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
+import { Papa } from 'ngx-papaparse';
+import { CsvsyncService } from './csvsync.service';
 
 export interface PeriodicElement {
   permission: boolean;
@@ -20,10 +22,7 @@ export interface ValidationElement{
   message: string;
 }
 
-export interface PreActionElement{
-  message: string;
-  permission: boolean;
-}
+
 
 @Component({
   selector: 'imx-csvsync',
@@ -78,13 +77,16 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   cancelCheck: boolean = false; // Checks if the validation process has been canceled.
   initialPageEvent = new PageEvent();
 
+
   constructor(
     private dialog: MatDialog,
     private menuService: MenuService,
     private readonly config: AppConfigService,
     private readonly authentication: AuthenticationService,
     private qerService: QerService,
-    private cdr: ChangeDetectorRef) {
+    private cdr: ChangeDetectorRef,
+    private papa: Papa,
+    private csvsyncService: CsvsyncService) {
       this.ConfigurationParameters().then((configParams) => {
         if (configParams) {
           this.configParams = this.convertObjectValuesToStrings(configParams);
@@ -325,22 +327,32 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
 
   private processFile(file: File) {
     const reader = new FileReader();
-    reader.onload = async () => {
-        const data = reader.result as string;
-        const lines = data.split('\n').filter(line => line.trim().length > 0);  // Filter out empty lines
-        this.headers = ['Index', ...lines[0].split(',').map(header => header ? header.trim() : '')];
-        for (let i = 1; i < lines.length; i++) {
-            const row = [i, ...lines[i].split(',').map(cell => cell ? cell.trim() : '')];
-            this.csvData.push(row);
-        }
-        this.csvDataSource.data = this.csvData;
-        this.fileLoaded = true;
-        this.totalRows = lines.length - 1;
+  
+    reader.onload = (event) => {
+      const data = event.target.result as string;
+
+      this.papa.parse(data, {
+        header: true, 
+        skipEmptyLines: true, 
+        encoding: 'UTF-8', 
+        complete: (result) => {
+          // 'result.data' contains the parsed CSV data
+          if (result.data.length > 0) {
+            this.headers = ['Index', ...Object.keys(result.data[0])];
+            this.csvData = result.data.map((row, index) => [index + 1, ...Object.values(row)]);
+            this.csvDataSource.data = this.csvData;
+            this.fileLoaded = true;
+            this.totalRows = result.data.length;
+          }
+        },
+      });
     };
+  
     this.searchControl.enable();
     reader.readAsText(file);
     this.allvalidated = false;
   }
+  
 
 getValidationResult(rowIndex: number, colIndex: number): string | undefined {
   // Get the row index in the filtered data
@@ -726,7 +738,7 @@ private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<Vali
 }
 
 public async getStartValidateData(endpoint: string, startobject: any): Promise<object> {
-  const msg = await this.config.apiClient.processRequest(this.startValidateMethod(endpoint, startobject));
+  const msg = await this.config.apiClient.processRequest(this.csvsyncService.startValidateMethod(endpoint, startobject));
   this.preActionMsg = msg;
   console.log(msg);
   console.log(msg.permission);
@@ -738,7 +750,7 @@ public async getStartValidateData(endpoint: string, startobject: any): Promise<o
 }
 
 public async getStartImportData(endpoint: string, startobject: any): Promise<object> {
-  const msg = await this.config.apiClient.processRequest(this.startImportMethod(endpoint, startobject));
+  const msg = await this.config.apiClient.processRequest(this.csvsyncService.startImportMethod(endpoint, startobject));
   this.preActionMsg = msg;
   if (msg.permission === true) {
     this.beginImport(endpoint);
@@ -748,7 +760,7 @@ public async getStartImportData(endpoint: string, startobject: any): Promise<obj
 }
 
 public async getEndImportData(endpoint: string, startobject: any): Promise<object> {
-  const msg = await this.config.apiClient.processRequest(this.endImportMethod(endpoint, startobject));
+  const msg = await this.config.apiClient.processRequest(this.csvsyncService.endImportMethod(endpoint, startobject));
   this.preActionMsg = msg;
   console.log(msg.message)
   if (!this.cancelCheck) {
@@ -757,65 +769,9 @@ public async getEndImportData(endpoint: string, startobject: any): Promise<objec
   return msg;
 }
 
-private startValidateMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
-  return {
-    path: `/portal/bulkactions/${endpoint}/startvalidate`,
-    parameters: [
-      {
-        name: 'startobject',
-        value: startobject,
-        in: 'body'
-      },
-    ],
-    method: 'POST',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json'
-  };
-}
 
-private startImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
-  return {
-    path: `/portal/bulkactions/${endpoint}/startimport`,
-    parameters: [
-      {
-        name: 'startobject',
-        value: startobject,
-        in: 'body'
-      },
-    ],
-    method: 'POST',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json'
-  };
-}
 
-private endImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
-  return {
-    path: `/portal/bulkactions/${endpoint}/endimport`,
-    parameters: [
-      {
-        name: 'startobject',
-        value: startobject,
-        in: 'body'
-      },
-    ],
-    method: 'POST',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json'
-  };
-}
+
 
 private countObjectsWithFunctionKey(data: any): number {
   if (!data || (Array.isArray(data) && data.length === 0)) {
