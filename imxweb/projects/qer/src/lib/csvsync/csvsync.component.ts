@@ -2,7 +2,6 @@ import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '
 import { QerService } from '../qer.service';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
-import { MethodDescriptor, TimeZoneInfo } from 'imx-qbm-dbts';
 import { AppConfigService, AuthenticationService, MenuService  } from 'qbm';
 import { BehaviorSubject } from 'rxjs';
 import { FormControl } from '@angular/forms';
@@ -10,19 +9,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 import { Papa } from 'ngx-papaparse';
 import { CsvsyncService } from './csvsync.service';
-
-export interface PeriodicElement {
-  permission: boolean;
-  message: string;
-}
-
-export interface ValidationElement{
-  rowIndex: number;
-  colIndex: number;
-  message: string;
-}
-
-
+import { ValidationElement } from './csvsync.service';
+import { PeriodicElement } from './csvsync.service';
 
 @Component({
   selector: 'imx-csvsync',
@@ -343,6 +331,12 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
             this.csvDataSource.data = this.csvData;
             this.fileLoaded = true;
             this.totalRows = result.data.length;
+
+            // Clear the value of the file input field
+            const fileInput = document.getElementById('csv-file') as HTMLInputElement;
+            if (fileInput) {
+                fileInput.value = ''; // This will clear the file input value
+            }
           }
         },
       });
@@ -410,7 +404,7 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
       const startTime = performance.now();
       console.log(inputParameter);
       try {
-        const data = await this.config.apiClient.processRequest(this.PostObject(endpoint, inputParameter));
+        const data = await this.config.apiClient.processRequest(this.csvsyncService.PostObject(endpoint, inputParameter));
         console.log('>>>>>>>>>>>>>>>>>>>'+ data.permission)
         if (this.cancelAction) {  
           break;
@@ -450,26 +444,6 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
       this.estimatedRemainingTime = null;
     });
     return results;
-  }
-
-private PostObject(endpoint: string, inputParameterName: any): MethodDescriptor<PeriodicElement> {
-  return {
-    path: `/portal/bulkactions/${endpoint}/import`,
-    parameters: [
-      {
-        name: 'inputParameterName',
-        value: inputParameterName,
-        in: 'body'
-      },
-    ],
-    method: 'POST',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json'
-  };
 }
 
 public async countPropertiesInConfigurationParameters(): Promise<number> {
@@ -478,24 +452,9 @@ public async countPropertiesInConfigurationParameters(): Promise<number> {
 }
 
 public async ConfigurationParameters(): Promise<object> {
-  const ConfigurationParameters = await this.config.apiClient.processRequest(this.getConfigCsv());
+  const ConfigurationParameters = await this.config.apiClient.processRequest(this.csvsyncService.getConfigCsv());
   console.log(ConfigurationParameters);
   return ConfigurationParameters;
- }
-
- private getConfigCsv(): MethodDescriptor<object> {
-  const parameters = [];
-  return {
-    path: `/portal/ConfigCsv`,
-    parameters,
-    method: 'GET',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json',
-  };
 }
 
 convertObjectValuesToStrings(obj: { [key: string]: any }): { [key: string]: string } {
@@ -510,45 +469,15 @@ convertObjectValuesToStrings(obj: { [key: string]: any }): { [key: string]: stri
 }
 
 public async mapping(endpoint: string): Promise<object> {
-  const mapping = await this.config.apiClient.processRequest(this.getMapping(endpoint));
+  const mapping = await this.config.apiClient.processRequest(this.csvsyncService.getMapping(endpoint));
   console.log(mapping);
   return mapping;
- }
-
-private getMapping(endpoint: string): MethodDescriptor<object> {
-  const parameters = [];
-  return {
-    path: `/portal/bulkactions/${endpoint}/mapping`,
-    parameters,
-    method: 'GET',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json',
-  };
 }
 
 public async notes(endpoint: string): Promise<object> {
-  const notes = await this.config.apiClient.processRequest(this.notebook(endpoint));
+  const notes = await this.config.apiClient.processRequest(this.csvsyncService.notebook(endpoint));
   console.log(notes);
   return notes;
- }
-
-private notebook(endpoint: string): MethodDescriptor<object> {
-  const parameters = [];
-  return {
-    path: `/portal/bulkactions/${endpoint}/noduplicates`,
-    parameters,
-    method: 'GET',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json',
-  };
 }
 
 private async validateNoDuplicates(columnMapping: any): Promise<void> {
@@ -649,7 +578,7 @@ public async validate(endpoint: string): Promise<void> {
     const startTime = performance.now();
     try {
       console.log(rowToValidate);
-      let validationResponse: any = await this.config.apiClient.processRequest(this.validateRow(endpoint, rowToValidate));
+      let validationResponse: any = await this.config.apiClient.processRequest(this.csvsyncService.validateRow(endpoint, rowToValidate));
 
       console.log(validationResponse);
 
@@ -712,29 +641,9 @@ public async validate(endpoint: string): Promise<void> {
 }
 
 public async val(endpoint: string, rowToValidate: any): Promise<object> {
-  const val = await this.config.apiClient.processRequest(this.validateRow(endpoint, rowToValidate));
+  const val = await this.config.apiClient.processRequest(this.csvsyncService.validateRow(endpoint, rowToValidate));
   console.log(val);
   return val;
- }
-
-private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<ValidationElement> {
-  return {
-    path: `/portal/bulkactions/${endpoint}/validate`,
-    parameters: [
-      {
-        name: 'rowToValidate',
-        value: rowToValidate,
-        in: 'body'
-      },
-    ],
-    method: 'POST',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json'
-  };
 }
 
 public async getStartValidateData(endpoint: string, startobject: any): Promise<object> {
@@ -790,24 +699,9 @@ private countObjectsWithFunctionKey(data: any): number {
 }
 
 public async getAERoleforCsvImporter(): Promise<void> {
-  const CsvImporter = await this.config.apiClient.processRequest<string[]>(this.getWhoForCSV());
+  const CsvImporter = await this.config.apiClient.processRequest<string[]>(this.csvsyncService.getWhoForCSV());
   console.log(CsvImporter);
   this.dataSource = CsvImporter;
- }
-
- private getWhoForCSV(): MethodDescriptor<void> {
-  const parameters = [];
-  return {
-    path: `/portal/BulkActionsFunctionsForUser`,
-    parameters,
-    method: 'GET',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json',
-  };
 }
 
 openConfirmationDialog(): void {
