@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '
 import { QerService } from '../qer.service';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
+import { MethodDescriptor, TimeZoneInfo } from 'imx-qbm-dbts';
 import { AppConfigService, AuthenticationService, MenuService  } from 'qbm';
 import { BehaviorSubject } from 'rxjs';
 import { FormControl } from '@angular/forms';
@@ -24,6 +25,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   preActionMsg: object = {message:'', permission: false};
   totalRows: number = 0;
   importErrorMsg: string = '';
+  fileInput: HTMLInputElement;
   allRowsValidated: boolean = false;
   validationResults$ = new BehaviorSubject<ValidationElement[]>([]);
   @ViewChild(MatPaginator) paginator: MatPaginator;
@@ -64,7 +66,6 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   cancelAction: boolean = false; // Canceles the validate() function
   cancelCheck: boolean = false; // Checks if the validation process has been canceled.
   initialPageEvent = new PageEvent();
-
 
   constructor(
     private dialog: MatDialog,
@@ -208,7 +209,6 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
       this.cdr.detectChanges();
       if (this.paginator) {
         // Create a new PageEvent and manually trigger the page change event
-        
         this.initialPageEvent.pageIndex = 0;
         this.initialPageEvent.pageSize = this.paginator.pageSize;
         this.initialPageEvent.length = this.csvDataSource.data.length;
@@ -297,8 +297,9 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
 
   triggerFileUpload() {
     const fileInput = document.getElementById('csv-file') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.click();
+    this.fileInput = fileInput
+    if (this.fileInput) {
+      this.fileInput.click();
     }
   }
 
@@ -315,7 +316,6 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
 
   private processFile(file: File) {
     const reader = new FileReader();
-  
     reader.onload = (event) => {
       const data = event.target.result as string;
 
@@ -333,20 +333,15 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
             this.totalRows = result.data.length;
 
             // Clear the value of the file input field
-            const fileInput = document.getElementById('csv-file') as HTMLInputElement;
-            if (fileInput) {
-                fileInput.value = ''; // This will clear the file input value
-            }
+            this.fileInput.value = '';
           }
         },
       });
     };
-  
     this.searchControl.enable();
     reader.readAsText(file);
     this.allvalidated = false;
   }
-  
 
 getValidationResult(rowIndex: number, colIndex: number): string | undefined {
   // Get the row index in the filtered data
@@ -383,30 +378,35 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
 
     let totalTimeTaken = 0; // Total time taken for processing rows
     let estimatedRemainingSecs = 0;
-
-    // Create an array of sanitized headers
-    const sanitizedHeaders = this.headers.map(header => header.replace(/\s/g, '_'));
-
     for (const csvRow of csvData) {
-      const inputParameterName: any = {};
-      // Iterate over the sanitized headers to set the keys in the inputParameter object
-      sanitizedHeaders.forEach((sanitizedHeader, index) => {
+      const inputParameter: any = {
+        columns: [],
+      };
+      this.headers.forEach((header, index) => {
         const cleanCellValue =
           typeof csvRow[index] === 'string'
             ? csvRow[index].replace(/[\r\n]+/g, '').trim()
             : csvRow[index];
-        inputParameterName[sanitizedHeader] = cleanCellValue;
+        inputParameter.columns.push({
+          column: header,
+          value: cleanCellValue,
+        });
       });
-      inputParameters.push(inputParameterName);
+
+
+      inputParameters.push(inputParameter);
     }
 
     for (const inputParameter of inputParameters) {
+
       const startTime = performance.now();
       console.log(inputParameter);
       try {
-        const data = await this.config.apiClient.processRequest(this.csvsyncService.PostObject(endpoint, inputParameter));
+        const data = await this.config.apiClient.processRequest(this.PostObject(endpoint, inputParameter));
+
         console.log('>>>>>>>>>>>>>>>>>>>'+ data.permission)
-        if (this.cancelAction) {  
+
+        if (this.cancelAction) {
           break;
         }
         if (!data.permission) {
@@ -534,12 +534,12 @@ public async beginImport(endpoint: string): Promise<void> {
   this.shouldValidate = true;
   await this.importToDatabase(endpoint);
   this.endImportObj = this.getEndImportData(endpoint, {totalRows: this.totalRows});
-
 }
 
 public async validate(endpoint: string): Promise<void> {
   this.processing = true;
   this.allImported = false;
+}
   this.loadingValidation = true;
   if(this.initializing || !this.shouldValidate) {
     setTimeout(() => {
@@ -550,29 +550,32 @@ public async validate(endpoint: string): Promise<void> {
   this.validationResults = []; // Clear the previous validation results
   this.allvalidated = true;
   this.numberOfErrors = 0; // Reset the error count before new validation
-  this.hardError = ''; //Clear the hardError message
-  //const NoDuplicates = await this.notes(endpoint);
-  //await this.validateNoDuplicates(NoDuplicates);
+  this.hardError = '';
 
   let totalTimeTaken = 0; // Total time taken for processing rows
   let estimatedRemainingSecs = 0;
 
   for (const [rowIndex, csvRow] of this.csvData.entries()) { // Validate all rows
-    if (this.cancelAction) {  
-
+    if (this.cancelAction) {
       break;
     }
-    const sanitizedHeaders: string[] = [];
+    const validationHeaders: string[] = [];
     const rowToValidate: any = {
-      HeaderNames: sanitizedHeaders
+      headerNames: validationHeaders,
+      index: (rowIndex + 1).toString(), // Adjust the index to be 1-based
+      columns: []
     };
 
     // Skip the "Index" column and start from 1
     for (let colIndex = 1; colIndex < csvRow.length; colIndex++) {
-      const header = this.headers[colIndex]; // Use the header name as the key
-      const sanitizedHeader = header.replace(/\s/g, '_'); // Replace spaces with underscores in the header
-      sanitizedHeaders.push(sanitizedHeader);
-      rowToValidate[sanitizedHeader] = csvRow[colIndex];
+      const header = this.headers[colIndex];
+      validationHeaders.push(header);
+
+      // Add each column object to the "columns" array
+      rowToValidate.columns.push({
+        column: header,
+        value: csvRow[colIndex]
+      });
     }
 
     const startTime = performance.now();
@@ -678,10 +681,6 @@ public async getEndImportData(endpoint: string, startobject: any): Promise<objec
   return msg;
 }
 
-
-
-
-
 private countObjectsWithFunctionKey(data: any): number {
   if (!data || (Array.isArray(data) && data.length === 0)) {
     return 0; // Return 0 if data is undefined, null, or an empty array
@@ -724,6 +723,4 @@ openConfirmationDialog(): void {
       this.importToDatabase(result.selectedOptionKey);
     }
   });
-}
-
 }
