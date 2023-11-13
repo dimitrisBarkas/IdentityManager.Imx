@@ -51,8 +51,6 @@ export class ConfirmDialogComponent implements OnInit {
   ) {console.log('Received data in the dialog component:', this.data);
   }
 
-
-
   dialogClose(): void {
 
     if (this.data.processing) {
@@ -131,14 +129,5 @@ export class ConfirmDialogComponent implements OnInit {
     this.importErrorSubscription = this.csvsyncService.importError$.subscribe((value) => {
       this.importError = value;
     });
-
-
-
-
-
   }
-
-
-
-
 }

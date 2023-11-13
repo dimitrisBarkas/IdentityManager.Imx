@@ -109,11 +109,13 @@ td.mat-cell {
   flex-wrap: wrap;
   position: relative;
 
+
   > * {
     margin-left: 10px;
     margin-top: 10px;
   }
 }
+
 
 .center { text-align: center!important;}
 
@@ -124,7 +126,6 @@ td.mat-cell {
 .error {
   color: red;
 }
-
 
 .imx-helper-alert {
   display: block;
@@ -166,7 +167,6 @@ td.mat-cell {
 
 
 .loading-container {
-
   background-color: rgba(0, 0, 0, 0.3); /* Dark background for the whole page */
   position: fixed;
   top: 0;
@@ -224,7 +224,6 @@ td.mat-cell {
       }
 
       p {margin-top: 10px;}
-
     }
 
     .errors,
@@ -264,7 +263,6 @@ td.mat-cell {
        // }
 
       }
-
     }
 
     .dialog-body {
@@ -315,4 +313,3 @@ td.mat-cell {
 .WarningForBrowser {
   color: red;
 }
-
