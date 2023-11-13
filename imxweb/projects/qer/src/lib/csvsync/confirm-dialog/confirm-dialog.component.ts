@@ -63,6 +63,8 @@ export class ConfirmDialogComponent implements OnInit {
     this.data.importError = false;
     this.data.importErrorMsg = '';
     this.data.hardError = '';
+  
+    console.log("Processing:", this.data.processing);
 
     this.dialogRef.close();
 

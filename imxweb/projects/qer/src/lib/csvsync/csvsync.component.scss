@@ -20,6 +20,8 @@
   border-radius: 2px;
 }
 
+.line-break { white-space: pre-line;}
+
 h1.mat-headline {
   margin-bottom: 15px;
 }
@@ -106,11 +108,16 @@ td.mat-cell {
   border-top: $black-c 1px solid;
   flex-wrap: wrap;
   position: relative;
+
+
   > * {
     margin-left: 10px;
     margin-top: 10px;
   }
 }
+
+
+.center { text-align: center!important;}
 
 .validation-result {
   display: block;
@@ -179,17 +186,20 @@ td.mat-cell {
     padding: 50px;
     width: 650px;
     max-width: 960px;
-    height: 300px;
+    height: auto;
     max-height: 500px;
     //display: flex;
     flex-direction: column; /* Change to column layout */
     justify-content: center;
     align-items: center;
     text-align: center;
-    
+
     p {
       font-size: 18px;
-      &.warning {font-weight: 600;}
+      text-align: left;
+      &.warning {
+        font-weight: 600;
+      }
       &.validation-details {
         margin-bottom: 0;
         font-size: 14px;
@@ -212,17 +222,20 @@ td.mat-cell {
         color: green;
         font-weight: 400;
       }
+
       p {margin-top: 10px;}
     }
 
     .errors,
     .warning {
       color: red;
-      
+
       h1 {font-weight: 400;}
       p {
+
         margin-top: 5px;
         &.warning {margin-top: 5px;}
+
         span {
           font-weight: 600;
           font-size: 20px;
@@ -248,6 +261,7 @@ td.mat-cell {
        // &:hover {
          // cursor: pointer;
        // }
+
       }
     }
 
