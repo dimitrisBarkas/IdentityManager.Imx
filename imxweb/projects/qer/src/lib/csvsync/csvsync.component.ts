@@ -6,28 +6,21 @@ import { MethodDescriptor, TimeZoneInfo } from 'imx-qbm-dbts';
 import { AppConfigService, AuthenticationService, MenuService  } from 'qbm';
 import { BehaviorSubject } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 import { Papa } from 'ngx-papaparse';
-
+import { CsvsyncService } from './csvsync.service';
 
 export interface PeriodicElement {
   permission: boolean;
   message: string;
 }
 
-
 export interface ValidationElement{
   rowIndex: number;
   colIndex: number;
   message: string;
 }
-
-export interface PreActionElement{
-  message: string;
-  permission: boolean;
-}
-
 
 
 
@@ -37,15 +30,12 @@ export interface PreActionElement{
   styleUrls: ['./csvsync.component.scss'],
 })
 export class CsvsyncComponent implements OnInit, AfterViewInit {
-
-
   startValidateObj: object;
   startImportObj: object;
   endImportObj: object;
   preActionMsg: object = {message:'', permission: false};
   totalRows: number = 0;
   importErrorMsg: string = '';
-  fileInput: HTMLInputElement;
   allRowsValidated: boolean = false;
   validationResults$ = new BehaviorSubject<ValidationElement[]>([]);
   @ViewChild(MatPaginator) paginator: MatPaginator;
@@ -84,9 +74,9 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
   importError: boolean = false;
   ShowErrors: boolean = true;
   cancelAction: boolean = false; // Canceles the validate() function
-
   cancelCheck: boolean = false; // Checks if the validation process has been canceled.
   initialPageEvent = new PageEvent();
+
 
   constructor(
     private dialog: MatDialog,
@@ -95,7 +85,9 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     private readonly authentication: AuthenticationService,
     private qerService: QerService,
     private cdr: ChangeDetectorRef,
-    private papa: Papa) {
+    private papa: Papa,
+    private csvsyncService: CsvsyncService,
+    private dialogRef: MatDialogRef<ConfirmDialogComponent>) {
       this.ConfigurationParameters().then((configParams) => {
         if (configParams) {
           this.configParams = this.convertObjectValuesToStrings(configParams);
@@ -103,18 +95,14 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
           console.error('ConfigurationParameters() returned an undefined or null object.');
         }
       });
-
     }
 
   public async ngOnInit(): Promise<void>  {
-
     this.selectedOptionKey = null;
     this.numberOfErrors = 0;
     this.loadingValidation = false;
     this.loadingImport = false;
-
     this.processing = true;
-
     this.allvalidated = false;
     await this.ConfigurationParameters();
     await this.getAERoleforCsvImporter(); // Wait for data to be fetched
@@ -123,14 +111,11 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.BulkActionsCofigParamCount = await this.countPropertiesInConfigurationParameters();
     this.functionObjectsCount = this.countObjectsWithFunctionKey(this.dataSource);
     console.log("Number of objects with 'Function' property:", this.functionObjectsCount);
-
     this.authentication.update();
     this.cdr.detectChanges();
-
     console.log(this.allvalidated)
-
     console.log(this.processing)
-
+    
   }
 
   ngOnDestroy() {
@@ -139,9 +124,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.processedRows = 0;
     this.selectedOptionKey = null;
     this.allRowsValidated = false;
-
     this.allImported = false;
-
     this.validationResults$.next([]);
     this.csvDataSource = new MatTableDataSource();
     this.csvData = [];
@@ -152,29 +135,12 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.CsvImporter = [];
     this.allvalidated = false;
     this.visibleRows = [];
-
     this.processing = false;
-
     this.initializing = false;
     this.shouldValidate = false;
     this.numberOfErrors = 0;
   }
 
-  dialogClose() {
-
-    if (this.processing){
-      this.cancelAction = true;
-      this.cancelCheck = true;
-
-    }else{
-      this.cancelCheck = false;
-
-    }
-    this.importError = false;
-    this.importErrorMsg = '';
-    this.hardError = '';
-    this.dialogHide = true;
-  }
 
   removeCsv() {
     this.cancelAction = false;
@@ -183,24 +149,19 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.importError = false;
     this.hardError = '';
     this.importErrorMsg = '';
-
     this.totalRows = 0;
     this.processedRows = 0;
     this.fileLoaded = false;
     this.allvalidated = false;
-
     this.allImported = false;
     this.allRowsValidated = false;
     this.processing = false;
-
     this.csvData = [];
     this.headers = [];
     this.csvDataSource.data = [];
     this.validationResponses = [];
     this.validationResults = [];
     this.validationResults$.next([]);
-
-
     this.numberOfErrors = 0;
     this.visibleRows = [];
     this.shouldValidate = false;
@@ -246,12 +207,10 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
     this.processing = true;
     setTimeout(() => {
       this.csvDataSource.paginator = this.paginator;
-
-
       this.cdr.detectChanges();
       if (this.paginator) {
         // Create a new PageEvent and manually trigger the page change event
-
+        
         this.initialPageEvent.pageIndex = 0;
         this.initialPageEvent.pageSize = this.paginator.pageSize;
         this.initialPageEvent.length = this.csvDataSource.data.length;
@@ -340,9 +299,8 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
 
   triggerFileUpload() {
     const fileInput = document.getElementById('csv-file') as HTMLInputElement;
-    this.fileInput = fileInput
-    if (this.fileInput) {
-      this.fileInput.click();
+    if (fileInput) {
+      fileInput.click();
     }
   }
 
@@ -359,6 +317,7 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
 
   private processFile(file: File) {
     const reader = new FileReader();
+  
     reader.onload = (event) => {
       const data = event.target.result as string;
 
@@ -374,17 +333,16 @@ export class CsvsyncComponent implements OnInit, AfterViewInit {
             this.csvDataSource.data = this.csvData;
             this.fileLoaded = true;
             this.totalRows = result.data.length;
-
-            // Clear the value of the file input field
-            this.fileInput.value = '';
           }
         },
       });
     };
+  
     this.searchControl.enable();
     reader.readAsText(file);
     this.allvalidated = false;
   }
+  
 
 getValidationResult(rowIndex: number, colIndex: number): string | undefined {
   // Get the row index in the filtered data
@@ -417,43 +375,34 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
     const inputParameters: any[] = [];
     const csvData = this.csvDataSource.data;
     const results: PeriodicElement[] = [];
-
     this.processing = true;
 
     let totalTimeTaken = 0; // Total time taken for processing rows
     let estimatedRemainingSecs = 0;
 
+    // Create an array of sanitized headers
+    const sanitizedHeaders = this.headers.map(header => header.replace(/\s/g, '_'));
 
     for (const csvRow of csvData) {
-      const inputParameter: any = {
-        columns: [],
-      };
-
-      this.headers.forEach((header, index) => {
+      const inputParameterName: any = {};
+      // Iterate over the sanitized headers to set the keys in the inputParameter object
+      sanitizedHeaders.forEach((sanitizedHeader, index) => {
         const cleanCellValue =
           typeof csvRow[index] === 'string'
             ? csvRow[index].replace(/[\r\n]+/g, '').trim()
             : csvRow[index];
-        inputParameter.columns.push({
-          column: header,
-          value: cleanCellValue,
-        });
+        inputParameterName[sanitizedHeader] = cleanCellValue;
       });
-
-
-      inputParameters.push(inputParameter);
+      inputParameters.push(inputParameterName);
     }
 
     for (const inputParameter of inputParameters) {
-
       const startTime = performance.now();
       console.log(inputParameter);
       try {
         const data = await this.config.apiClient.processRequest(this.PostObject(endpoint, inputParameter));
-
         console.log('>>>>>>>>>>>>>>>>>>>'+ data.permission)
-
-        if (this.cancelAction) {
+        if (this.cancelAction) {  
           break;
         }
         if (!data.permission) {
@@ -461,14 +410,10 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
           this.importErrorMsg = data.message;
           break;
         }
-
         results.push(data);
       } catch (error) {
         console.error(`Error submitting CSV data: ${error}`);
       } finally {
-
-
-
         const endTime = performance.now();
         const timeTaken = endTime - startTime;
         totalTimeTaken += timeTaken;
@@ -485,20 +430,15 @@ getValidationResult(rowIndex: number, colIndex: number): string | undefined {
     }
 
     this.allRowsValidated = false;
-
     this.allImported = true;
     this.processing = false;
-
-
     setTimeout(() => {
 
       this.loadingImport = false;
       this.progress = 0;
       this.processedRows = 0;
       this.estimatedRemainingTime = null;
-
     });
-
     return results;
   }
 
@@ -630,19 +570,20 @@ private async validateNoDuplicates(columnMapping: any): Promise<void> {
 
 
 public async onValidate(endpoint: string): Promise<void> {
-
   this.allRowsValidated = false;
-
   this.shouldValidate = true;
   this.preValidateDialog = true;
   this.startValidateObj = this.getStartValidateData(endpoint, {totalRows: this.totalRows});
-}
 
+    // Update service data after validation
+    this.csvsyncService.setprocessing(this.processing);
+}
 
 public async onSubmit(endpoint: string): Promise<void> {
   this.shouldValidate = true;
   this.preValidateDialog = true;
   this.startImportObj = this.getStartImportData(endpoint, {totalRows: this.totalRows});
+
 }
 
 public async beginValidation(endpoint: string): Promise<void> {
@@ -651,97 +592,92 @@ public async beginValidation(endpoint: string): Promise<void> {
   await this.validate(endpoint);
   this.allRowsValidated = this.checkAllRowsValidated(); // Call the new method after validation
   this.validateDialog = true;
-}
+} 
 
 public async beginImport(endpoint: string): Promise<void> {
   //this.preValidateDialog = false;
   this.shouldValidate = true;
   await this.importToDatabase(endpoint);
   this.endImportObj = this.getEndImportData(endpoint, {totalRows: this.totalRows});
+
 }
 
 public async validate(endpoint: string): Promise<void> {
-
   this.processing = true;
   this.allImported = false;
-
   this.loadingValidation = true;
   if(this.initializing || !this.shouldValidate) {
     setTimeout(() => {
       this.loadingValidation = false;
-
     });
     return;
   }
   this.validationResults = []; // Clear the previous validation results
   this.allvalidated = true;
-
   this.numberOfErrors = 0; // Reset the error count before new validation
-  this.hardError = '';
+  this.hardError = ''; //Clear the hardError message
+  //const NoDuplicates = await this.notes(endpoint);
+  //await this.validateNoDuplicates(NoDuplicates);
 
   let totalTimeTaken = 0; // Total time taken for processing rows
   let estimatedRemainingSecs = 0;
 
   for (const [rowIndex, csvRow] of this.csvData.entries()) { // Validate all rows
+    if (this.cancelAction) {  
 
-
-    if (this.cancelAction) {
       break;
     }
-
-    const validationHeaders: string[] = [];
+    const sanitizedHeaders: string[] = [];
     const rowToValidate: any = {
-      headerNames: validationHeaders,
-      index: (rowIndex + 1).toString(), // Adjust the index to be 1-based
-      columns: []
+      HeaderNames: sanitizedHeaders
     };
 
     // Skip the "Index" column and start from 1
     for (let colIndex = 1; colIndex < csvRow.length; colIndex++) {
-      const header = this.headers[colIndex];
-      validationHeaders.push(header);
-
-      // Add each column object to the "columns" array
-      rowToValidate.columns.push({
-        column: header,
-        value: csvRow[colIndex]
-      });
+      const header = this.headers[colIndex]; // Use the header name as the key
+      const sanitizedHeader = header.replace(/\s/g, '_'); // Replace spaces with underscores in the header
+      sanitizedHeaders.push(sanitizedHeader);
+      rowToValidate[sanitizedHeader] = csvRow[colIndex];
     }
 
     const startTime = performance.now();
     try {
       console.log(rowToValidate);
-      // Process the API response
       let validationResponse: any = await this.config.apiClient.processRequest(this.validateRow(endpoint, rowToValidate));
-      console.log(validationResponse);
-      for (const responseItem of validationResponse) {
-        const column = responseItem.column;
-        const value = responseItem.value;
 
-        if (column === "HardError") {
-          // Handle hard errors
-          this.hardError = value;
-          // You can add additional logic here if needed
-        } else {
-          // Handle validation results
-          // Iterate over the headers and validate responses
-          for (let colIndex = 1; colIndex < this.headers.length; colIndex++) {
-            const header = this.headers[colIndex];
-            if (column === header && value !== "ok") {
-              this.validationResults.push({ rowIndex, colIndex, message: value });
-              this.allvalidated = false;
-              this.numberOfErrors++;
-            }
-          }
+      console.log(validationResponse);
+
+      if (validationResponse.error) {
+        console.log(`Validation error found: ${validationResponse.error}`);
+        this.hardError = validationResponse.error;
+        this.processing = false;
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          this.allRowsValidated = false;
+          this.loadingValidation = false;
+          this.progress = 0;
+          this.processedRows = 0;
+          this.estimatedRemainingTime = null;
+        });
+        return; // Exit the function when an error is found
+      }
+
+      // Iterate over the headers and validate responses
+      for (let colIndex = 1; colIndex < this.headers.length; colIndex++) {
+        const header = this.headers[colIndex];
+        const sanitizedHeader = header.replace(/\s/g, '_'); // Replace spaces with underscores in the header
+        if (validationResponse[sanitizedHeader] && validationResponse[sanitizedHeader] !== "ok") {
+          this.validationResults.push({ rowIndex, colIndex, message: validationResponse[sanitizedHeader] });
+          this.allvalidated = false;
+          this.numberOfErrors++;
         }
       }
-      console.log(validationResponse);
+
     } catch (error) {
-      console.error(`Error handling the API response: ${error}`);
+      console.error(`Error validating row ${rowIndex}: ${error}`);
       this.allvalidated = false;
       this.validationResults$.next(this.validationResults);
-    }
-     finally {
+    } finally {
       const endTime = performance.now();
       const timeTaken = endTime - startTime;
       totalTimeTaken += timeTaken;
@@ -754,12 +690,15 @@ public async validate(endpoint: string): Promise<void> {
       this.progress = (this.processedRows / this.totalRows) * 100;
       this.estimatedRemainingTime = this.formatTime(estimatedRemainingSecs);
       this.processedRows++;
+          // Here, you can update the estimatedRemainingTime and processedRows in CsvsyncService
+    this.csvsyncService.setEstimatedRemainingTime(this.estimatedRemainingTime);
+    this.csvsyncService.setProcessedRows(this.processedRows);
+    this.csvsyncService.settotalRows(this.totalRows);
+    this.csvsyncService.setprogress(this.progress);
     }
   }
-
-  this.cancelAction = false;
+  this.cancelAction = false; 
   this.processing = false;
-
   console.log(this.allvalidated);
   this.csvDataSource.paginator._changePageSize(this.totalRows);
   this.cdr.detectChanges();
@@ -769,7 +708,7 @@ public async validate(endpoint: string): Promise<void> {
     this.processedRows = 0;
     this.estimatedRemainingTime = null;
   });
-}
+} 
 
 public async val(endpoint: string, rowToValidate: any): Promise<object> {
   const val = await this.config.apiClient.processRequest(this.validateRow(endpoint, rowToValidate));
@@ -797,24 +736,53 @@ private validateRow(endpoint: string, rowToValidate: any): MethodDescriptor<Vali
   };
 }
 
-
 public async getStartValidateData(endpoint: string, startobject: any): Promise<object> {
-  const msg = await this.config.apiClient.processRequest(this.startValidateMethod(endpoint, startobject));
-
+  const msg = await this.config.apiClient.processRequest(this.csvsyncService.startValidateMethod(endpoint, startobject));
   this.preActionMsg = msg;
-
   console.log(msg);
   console.log(msg.permission);
-
   if (msg.permission === true) {
     this.beginValidation(endpoint);
   }
-  this.dialogHide = false;
+  const dialogData = {
+    preActionMsg: this.preActionMsg,
+    numberOfErrors: this.numberOfErrors,
+    loadingValidation: this.loadingValidation,
+    loadingImport: this.loadingImport,
+    validateDialog: this.validateDialog,
+    fileLoaded: this.fileLoaded,
+    allRowsValidated: this.allRowsValidated,
+    processing: this.processing,
+    initializing: this.initializing,
+    hardError: this.hardError,
+    allImported: this.allImported,
+    importError: this.importError,
+    estimatedRemainingTime: this.estimatedRemainingTime,
+    processedRows: this.processedRows,
+    totalRows: this.totalRows,
+    progress: this.progress
+  };
+
+  const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+    data: dialogData,
+    width: '650px',
+    height: '300px',
+  });
+
+  // Subscribe to dialog close event and handle any changes if needed
+  dialogRef.afterClosed().subscribe((result: any) => {
+    if (result === true) {
+      // Handle dialog confirmation logic if needed
+    } else {
+      // Handle dialog cancel or other logic
+    }
+  });
+
   return msg;
 }
 
 public async getStartImportData(endpoint: string, startobject: any): Promise<object> {
-  const msg = await this.config.apiClient.processRequest(this.startImportMethod(endpoint, startobject));
+  const msg = await this.config.apiClient.processRequest(this.csvsyncService.startImportMethod(endpoint, startobject));
   this.preActionMsg = msg;
   if (msg.permission === true) {
     this.beginImport(endpoint);
@@ -824,86 +792,23 @@ public async getStartImportData(endpoint: string, startobject: any): Promise<obj
 }
 
 public async getEndImportData(endpoint: string, startobject: any): Promise<object> {
-  const msg = await this.config.apiClient.processRequest(this.endImportMethod(endpoint, startobject));
+  const msg = await this.config.apiClient.processRequest(this.csvsyncService.endImportMethod(endpoint, startobject));
   this.preActionMsg = msg;
   console.log(msg.message)
-
   if (!this.cancelCheck) {
     this.dialogHide = false;
   }
-
   return msg;
 }
 
 
 
-private startValidateMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
 
-  return {
-    path: `/portal/bulkactions/${endpoint}/startvalidate`,
-    parameters: [
-      {
-        name: 'startobject',
-        value: startobject,
-        in: 'body'
-      },
-    ],
-    method: 'POST',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json'
-  };
-}
-
-
-private startImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
-  return {
-    path: `/portal/bulkactions/${endpoint}/startimport`,
-    parameters: [
-      {
-        name: 'startobject',
-        value: startobject,
-        in: 'body'
-      },
-    ],
-    method: 'POST',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json'
-  };
-}
-
-private endImportMethod(endpoint: string, startobject: any): MethodDescriptor<PreActionElement> {
-  return {
-    path: `/portal/bulkactions/${endpoint}/endimport`,
-    parameters: [
-      {
-        name: 'startobject',
-        value: startobject,
-        in: 'body'
-      },
-    ],
-    method: 'POST',
-    headers: {
-      'imx-timezone': TimeZoneInfo.get(),
-    },
-    credentials: 'include',
-    observe: 'response',
-    responseType: 'json'
-  };
-}
 
 private countObjectsWithFunctionKey(data: any): number {
   if (!data || (Array.isArray(data) && data.length === 0)) {
     return 0; // Return 0 if data is undefined, null, or an empty array
   }
-
   if (Array.isArray(data)) {
     // If data is an array, count objects with "Function" or "function" keys
     return data.reduce((count, item) => {
@@ -913,11 +818,8 @@ private countObjectsWithFunctionKey(data: any): number {
     // If data is an object, check if it has "Function" or "function" keys
     return (data.hasOwnProperty("Function") || data.hasOwnProperty("function")) ? 1 : 0;
   }
-
   return 0; // Return 0 for other data types
 }
-
-
 
 public async getAERoleforCsvImporter(): Promise<void> {
   const CsvImporter = await this.config.apiClient.processRequest<string[]>(this.getWhoForCSV());
@@ -939,8 +841,7 @@ public async getAERoleforCsvImporter(): Promise<void> {
     responseType: 'json',
   };
 }
-
-
+/*
 openConfirmationDialog(): void {
   const selectedOptionValue = this.getObjectValues(this.configParams).find(
     (value) => this.getReversedKey(value) === this.selectedOptionKey
@@ -962,7 +863,5 @@ openConfirmationDialog(): void {
     }
   });
 }
-
+*/
 }
-
-
