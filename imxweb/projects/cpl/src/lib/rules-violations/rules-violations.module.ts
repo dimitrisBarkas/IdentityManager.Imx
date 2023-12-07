@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -25,10 +25,9 @@
  */
 
 import { CommonModule } from '@angular/common';
-import { NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
-import { RouterModule, Routes } from '@angular/router';
 import { EuiCoreModule, EuiMaterialModule } from '@elemental-ui/core';
 import { TranslateModule } from '@ngx-translate/core';
 
@@ -37,9 +36,11 @@ import {
   ClassloggerService,
   DataSourceToolbarModule,
   DataTableModule,
+  HelpContextualModule,
+  ExtModule,
   MenuItem,
   MenuService,
-  RouteGuardService
+  SelectedElementsModule
 } from 'qbm';
 import { RulesViolationsComponent } from './rules-violations.component';
 import { RulesViolationsDetailsComponent } from './rules-violations-details/rules-violations-details.component';
@@ -50,15 +51,11 @@ import { RulesViolationsSingleActionComponent } from './rules-violations-action/
 import { ResolveComponent } from './resolve/resolve.component';
 import { MatStepperModule } from '@angular/material/stepper';
 import { isExceptionAdmin } from '../rules/admin/permissions-helper';
-import { RuleViolationsGuardService } from '../guards/rule-violations-guard.service';
-const routes: Routes = [
-  {
-    path: 'compliance/rulesviolations/approve',
-    component: RulesViolationsComponent,
-    canActivate: [RouteGuardService, RuleViolationsGuardService],
-    resolve: [RouteGuardService]
-  }
-];
+import { MitigatingControlsPersonComponent } from './mitigating-controls-person/mitigating-controls-person.component';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MitigatingControlContainerModule } from '../mitigating-control-container/mitigating-control-container.module';
+import { ProjectConfig } from 'imx-api-qer';
+
 
 @NgModule({
   declarations: [
@@ -67,7 +64,8 @@ const routes: Routes = [
     RulesViolationsDetailsComponent,
     RulesViolationsActionComponent,
     RulesViolationsMultiActionComponent,
-    RulesViolationsSingleActionComponent
+    RulesViolationsSingleActionComponent,
+    MitigatingControlsPersonComponent
   ],
   imports: [
     CdrModule,
@@ -76,14 +74,20 @@ const routes: Routes = [
     DataTableModule,
     EuiCoreModule,
     EuiMaterialModule,
+    ExtModule,
     FormsModule,
     JustificationModule,
     MatCardModule,
     MatStepperModule,
+    MatExpansionModule,
     ReactiveFormsModule,
     TranslateModule,
-    RouterModule.forChild(routes),
-  ]
+    SelectedElementsModule,
+    MitigatingControlContainerModule,
+    HelpContextualModule,
+  ],
+  exports:[MitigatingControlsPersonComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class RulesViolationsModule {
 
@@ -91,13 +95,13 @@ export class RulesViolationsModule {
     private readonly menuService: MenuService,
     logger: ClassloggerService
   ) {
-    logger.info(this, '▶️ RulesViolationsnModule loaded');
+    logger.info(this, '▶︝ RulesViolationsnModule loaded');
     this.setupMenu();
   }
 
   private setupMenu(): void {
     this.menuService.addMenuFactories(
-      (preProps: string[], groups: string[]) => {
+      (preProps: string[], features: string[], projectConfig: ProjectConfig, groups: string[]) => {
 
         const items: MenuItem[] = [];
 

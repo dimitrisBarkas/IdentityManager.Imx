@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -24,53 +24,49 @@
  *
  */
 
-import { Component, Inject, Injector, OnInit, ViewChild } from '@angular/core';
-import { EuiSidesheetRef, EUI_SIDESHEET_DATA } from '@elemental-ui/core';
-import { OwnershipInformation } from 'imx-api-qer';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { EuiLoadingService, EuiSidesheetRef } from '@elemental-ui/core';
 import { IEntity } from 'imx-qbm-dbts';
 import { RoleService } from '../role.service';
-import { ConfirmationService, ExtService, TabControlHelper, TabItem } from 'qbm';
+import { ConfirmationService, ExtService, TabItem } from 'qbm';
 import { MatTabGroup } from '@angular/material/tabs';
+import { Subscription } from 'rxjs';
+import { DataManagementService } from '../data-management.service';
 
 @Component({
   selector: 'imx-role-detail',
   templateUrl: './role-detail.component.html',
   styleUrls: ['./role-detail.component.scss'],
 })
-export class RoleDetailComponent implements OnInit {
+export class RoleDetailComponent implements OnInit, OnDestroy {
   @ViewChild('tabs') public tabs: MatTabGroup;
   public dynamicTabs: TabItem[] = [];
   public parameters: { tablename: string; entity: IEntity };
+  public subscriptions$: Subscription[] = [];
 
+  private defaultClickHandler: Function;
   private canClose = true;
   private autoMembershipsValid = true;
   private confirmIsOpen = false;
 
   constructor(
-    @Inject(EUI_SIDESHEET_DATA)
-    public data: {
-      entity: IEntity;
-      isAdmin: boolean;
-      ownershipInfo: OwnershipInformation;
-      editableFields: string[];
-    },
+    private busyService: EuiLoadingService,
     private readonly sidesheetRef: EuiSidesheetRef,
     private readonly roleService: RoleService,
-    private readonly membershipService: RoleService,
+    private dataManagementService: DataManagementService,
     private readonly confirm: ConfirmationService,
     private readonly tabService: ExtService
   ) {
-
     this.parameters = {
-      tablename: this.data.ownershipInfo.TableName,
-      entity: this.data.entity
+      tablename: this.roleService.ownershipInfo.TableName,
+      entity: this.dataManagementService.entityInteractive.GetEntity(),
     };
-    this.roleService.dataDirtySubject.subscribe((flag) => {
+    this.dataManagementService.mainDataDirty$.subscribe((flag) => {
       this.canClose = !flag;
     });
-    this.roleService.autoMembershipDirty$.subscribe((flag) => {
+    this.dataManagementService.autoMembershipDirty$.subscribe((flag) => {
       this.autoMembershipsValid = !flag;
-    })
+    });
     this.sidesheetRef.closeClicked().subscribe(async (result) => {
       if (this.confirmIsOpen) {
         return;
@@ -88,24 +84,72 @@ export class RoleDetailComponent implements OnInit {
     });
   }
 
+  public get objectType(): string {
+    return this.dataManagementService.entityInteractive.GetEntity().TypeName;
+  }
+
+  public get objectUid(): string {
+    return this.dataManagementService.entityInteractive.GetEntity().GetKeys().join(',');
+  }
+
   public async ngOnInit(): Promise<void> {
     /**
      * Resolve an issue where the mat-tab navigation arrows could appear on first load
      */
-    setTimeout(() => {
-      TabControlHelper.triggerResizeEvent();
-    });
-    this.dynamicTabs = (await this.tabService.getFittingComponents<TabItem>('roleOverview',
-      (ext) =>  ext.inputData.checkVisibility(this.parameters)))
-      .sort((tab1: TabItem, tab2: TabItem) => tab1.sortOrder - tab2.sortOrder);
+    this.subscriptions$.push(
+      this.sidesheetRef.componentInstance.onOpen().subscribe(() => {
+        // Recalculate header
+        this.tabs.updatePagination();
+      })
+    );
+    this.dynamicTabs = (
+      await this.tabService.getFittingComponents<TabItem>('roleOverview', (ext) => ext.inputData.checkVisibility(this.parameters))
+    ).sort((tab1: TabItem, tab2: TabItem) => tab1.sortOrder - tab2.sortOrder);
 
+    // implement tab checking logic
+    this.defaultClickHandler = this.tabs._handleClick;
+    this.tabs._handleClick = async (tab, header, index) => {
+      const isNewTab = index !== this.tabs.selectedIndex;
+      if (!isNewTab) return;
+
+      if (this.leavingWithDirty()) {
+        if (!(await this.confirm.confirmLeaveWithUnsavedChanges())) return;
+
+        // Need to reload the interactive entity to discard old data
+        this.busyService.show();
+
+        try {
+          this.dataManagementService.autoMembershipDirty(false);
+          this.dataManagementService.mainDataDirty(false);
+          await this.dataManagementService.setInteractive();
+        } finally {
+          this.busyService.hide();
+        }
+      }
+
+      this.defaultClickHandler.apply(this.tabs, [tab, header, index]);
+    };
+  }
+
+  public ngOnDestroy(): void {
+    this.subscriptions$.map((sub) => sub.unsubscribe());
+  }
+
+  public leavingWithDirty(): boolean {
+    const leavingMainWithDirty = this.tabs.selectedIndex === 0 && !this.canClose;
+    const leavingMemWithDirty = this.tabs.selectedIndex === 1 && !this.autoMembershipsValid;
+    return leavingMainWithDirty || leavingMemWithDirty;
   }
 
   public canHaveMemberships(): boolean {
-    return this.membershipService.canHaveMemberships(this.data.ownershipInfo.TableName);
+    return this.roleService.canHaveMemberships();
+  }
+
+  public canHaveStatistics(): boolean {
+    return this.roleService.canHaveStatistics();
   }
 
   public canHaveEntitlements(): boolean {
-    return this.membershipService.canHaveEntitlements(this.data.ownershipInfo.TableName);
+    return this.roleService.canHaveEntitlements();
   }
 }

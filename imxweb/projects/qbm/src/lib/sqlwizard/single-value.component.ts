@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -24,8 +24,16 @@
  *
  */
 
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { FkProviderItem, IClientProperty, MetaTableRelationData, SqlColumnTypes, SqlTable, ValType, ValType as _valType } from 'imx-qbm-dbts';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import {
+  FkProviderItem,
+  IClientProperty,
+  MetaTableRelationData,
+  SqlColumnTypes,
+  SqlTable,
+  ValType,
+  ValType as _valType,
+} from 'imx-qbm-dbts';
 import { Subscription } from 'rxjs';
 import { BaseCdr } from '../cdr/base-cdr';
 import { EntityService } from '../entity/entity.service';
@@ -35,10 +43,9 @@ import { SqlWizardApiService } from './sqlwizard-api.service';
 @Component({
   selector: 'imx-sqlwizard-singlevalue',
   styleUrls: ['./sqlwizard.scss'],
-  templateUrl: './single-value.component.html'
+  templateUrl: './single-value.component.html',
 })
 export class SingleValueComponent implements OnInit, OnDestroy {
-
   public get selectedTable() {
     return this._selectedTable;
   }
@@ -53,25 +60,44 @@ export class SingleValueComponent implements OnInit, OnDestroy {
   }
 
   get value() {
-    if (this.mode == 'array') {
+    if (this.mode == 'array' && this.expr.Data.Value) {
       return this.expr.Data.Value[this.index];
-    }
-    else {
+    } else {
       return this.expr.Data.Value;
     }
   }
 
   set value(val) {
-    if (this.mode == 'array') {
+    if (this.mode == 'array' && this.expr.Data.Value) {
       this.expr.Data.Value[this.index] = val;
-    }
-    else {
+    } else {
       this.expr.Data.Value = val;
     }
   }
+
+  get displayValue() {
+    if (!this.expr.Data.DisplayValues) {
+      return null;
+    }
+    return this.expr.Data.DisplayValues[this.mode === 'array' ? this.index : 0];
+  }
+
+  set displayValue(val) {
+    if(!this.expr.Data?.DisplayValues){
+      return;
+    }
+    if (this.mode == 'array' && this.expr.Data.DisplayValues) {
+      this.expr.Data.DisplayValues[this.index] = val;
+    } else {
+      this.expr.Data.DisplayValues = [val];
+    }
+  }
+
   @Input() public expr: SqlNodeView;
   @Input() public mode: 'array' | 'single' = 'single';
   @Input() public index: number;
+
+  @Output() public change = new EventEmitter<any>();
 
   public ValType = _valType;
   public ColumnType = SqlColumnTypes;
@@ -80,64 +106,66 @@ export class SingleValueComponent implements OnInit, OnDestroy {
 
   private _selectedTable: SqlTable;
   private _fkRelation: MetaTableRelationData = {
-    IsMemberRelation: false
+    IsMemberRelation: false,
   };
   private _fkProviderItem: FkProviderItem = {
     columnName: 'dummycolumn',
     fkTableName: 'not_set',
-    parameterNames: [
-      'OrderBy',
-      'StartIndex',
-      'PageSize',
-      'filter',
-      'search'
-    ],
+    parameterNames: ['OrderBy', 'StartIndex', 'PageSize', 'filter', 'search'],
     load: async (_, parameters = {}) => this.sqlWizardApi.getCandidates(this._fkRelation.ParentTableName, parameters),
+    getFilterTree: async () => ({ Elements: [] }),
     getDataModel: async () => ({}),
   };
 
-  constructor(private readonly entityService: EntityService,
-    private readonly sqlWizardApi: SqlWizardApiService) { }
+  constructor(private readonly entityService: EntityService, private readonly sqlWizardApi: SqlWizardApiService) {}
 
   private subscriptions: Subscription[] = [];
 
   public ngOnInit(): void {
-    this.subscriptions.push(this.expr.columnChanged.subscribe(_ => {
-      this.buildCdr();
-    }));
+    this.subscriptions.push(
+      this.expr.columnChanged.subscribe((_) => {
+        this.buildCdr();
+      })
+    );
 
     this.buildCdr();
   }
 
-  private buildCdr() {
+  public emitChanges(): void {
+    this.change.emit();
+  }
 
+  private buildCdr() {
     const tables = this.expr.Property.SelectionTables;
     if (tables && tables.length > 0) {
       this.selectedTable = tables[0];
-    }
-    else {
+    } else {
       this.selectedTable = null;
     }
 
     const property: IClientProperty = {
       ColumnName: 'dummycolumn',
       Type: ValType.String,
-      FkRelation: this._fkRelation
+      FkRelation: this._fkRelation,
     };
 
     const column = this.entityService.createLocalEntityColumn(property, [this._fkProviderItem], {
-      Value: this.value
+      Value: this.value,
+      DisplayValue: this.displayValue,
     });
 
     // when the CDR value changes, write back to the SQL wizard data structure
     column.ColumnChanged.subscribe(() => {
-      this.value = column.GetValue();
+      setTimeout(() => {
+        this.displayValue = column.GetDisplayValue();
+        this.value = column.GetValue();
+        this.emitChanges();
+      }, 0);
     });
     this.cdr = new BaseCdr(column, '#LDS#Value');
   }
 
   public ngOnDestroy(): void {
-    for (var s of this.subscriptions)
-      s.unsubscribe();
+    for (var s of this.subscriptions) s.unsubscribe();
   }
 }

@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -33,7 +33,7 @@ import { ParameterizedText } from 'qbm';
 
 /** Default display component for cart items; simply displaying the service item. */
 @Component({
-  template: `<div data-imx-identifier="default-cart-item-display">{{ cartItem.UID_AccProduct.Column.GetDisplayValue() }}</div>
+  template: `<div data-imx-identifier="default-cart-item-display">{{ cartItem.GetEntity().GetDisplay() }}</div>
         <div subtitle>
           <span>{{'#LDS#Recipient' | translate}}: </span>
           <span data-imx-identifier="default-cart-item-recipient">{{ cartItem.UID_PersonOrdered?.Column?.GetDisplayValue() }}</span>

@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -24,7 +24,7 @@
  *
  */
 
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { SqlNodeView } from './SqlNodeView';
 import { SqlColumnTypes, ValType as _valType } from 'imx-qbm-dbts';
 
@@ -35,16 +35,23 @@ import { SqlColumnTypes, ValType as _valType } from 'imx-qbm-dbts';
 })
 export class SimpleExpressionComponent {
     @Input() public expr: SqlNodeView;
+    @Output() public change = new EventEmitter<any>();
 
     public ValType = _valType;
     public ColumnType = SqlColumnTypes;
 
+    public emitChanges(): void {
+      this.change.emit();
+    }
+
     public delete(ind: number) {
         this.expr.Data.Value.splice(ind, 1);
+        this.emitChanges();
     }
 
     public addNew() {
         this.expr.Data.Value.push(null);
+        this.emitChanges();
     }
 
     // https://stackoverflow.com/questions/42322968/angular2-dynamic-input-field-lose-focus-when-input-changes
@@ -66,6 +73,7 @@ export class SimpleExpressionComponent {
                 this.expr.Data.Value = null;
             }
         }
+        this.emitChanges();
     }
 
     public isArray(x): boolean {

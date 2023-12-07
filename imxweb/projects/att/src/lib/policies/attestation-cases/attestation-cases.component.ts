@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -27,10 +27,11 @@
 import { OverlayRef } from '@angular/cdk/overlay';
 import { Component, Inject, OnInit } from '@angular/core';
 import { EuiLoadingService, EuiSidesheetRef, EUI_SIDESHEET_DATA } from '@elemental-ui/core';
+import { TranslateService } from '@ngx-translate/core';
 
 import { PortalAttestationFilterMatchingobjects } from 'imx-api-att';
-import { CollectionLoadParameters, IClientProperty, DisplayColumns, ValType, EntitySchema, DataModel } from 'imx-qbm-dbts';
-import { ClassloggerService, ConfirmationService, DataSourceToolbarSettings, SettingsService, SnackBarService } from 'qbm';
+import { CollectionLoadParameters, DisplayColumns, ValType, EntitySchema } from 'imx-qbm-dbts';
+import { ClassloggerService, ClientPropertyForTableColumns, ConfirmationService, DataSourceToolbarSettings, LdsReplacePipe, SettingsService, SnackBarService } from 'qbm';
 import { PolicyService } from '../policy.service';
 import { AttestationCasesComponentParameter } from './attestation-cases-component-parameter.interface';
 
@@ -48,8 +49,7 @@ export class AttestationCasesComponent implements OnInit {
   public selectedItems: PortalAttestationFilterMatchingobjects[] = [];
 
   private navigationState: CollectionLoadParameters;
-  private displayedColumns: IClientProperty[];
-  private dataModel: DataModel;
+  private displayedColumns: ClientPropertyForTableColumns[];
   private threshold = -1;
 
   constructor(
@@ -60,6 +60,8 @@ export class AttestationCasesComponent implements OnInit {
     private readonly snackbar: SnackBarService,
     private readonly confirmationService: ConfirmationService,
     settingsService: SettingsService,
+    private readonly translate: TranslateService,
+    private readonly ldsReplace: LdsReplacePipe,
     private readonly logger: ClassloggerService
   ) {
     this.navigationState = { PageSize: settingsService.DefaultPageSize, StartIndex: 0, ParentKey: '' };
@@ -70,6 +72,7 @@ export class AttestationCasesComponent implements OnInit {
       this.displayedColumns.push({
         ColumnName: 'runMethod',
         Type: ValType.String,
+        untranslatedDisplay: '#LDS#Actions'
       });
     }
   }
@@ -82,7 +85,6 @@ export class AttestationCasesComponent implements OnInit {
     let overlayRef: OverlayRef;
     setTimeout(() => (overlayRef = this.busyService.show()));
     try {
-      this.dataModel = await this.policyService.getDataModel();
       this.threshold = await this.policyService.getCasesThreshold();
     } finally {
       setTimeout(async () => {
@@ -91,6 +93,10 @@ export class AttestationCasesComponent implements OnInit {
     }
 
     return this.navigate();
+  }
+
+  public get hasSampleData(): boolean {
+    return this.data.uidPickCategory != null && this.data.uidPickCategory !== '';
   }
 
   public async onNavigationStateChanged(newState: CollectionLoadParameters): Promise<void> {
@@ -104,7 +110,8 @@ export class AttestationCasesComponent implements OnInit {
 
   public async createRun(data: PortalAttestationFilterMatchingobjects[]): Promise<void> {
     const count = data.length > 0 ? data.length : this.dstSettings.dataSource.totalCount;
-    if (count <= 1000 || (await this.confirmCreation())) {
+
+    if (count <= this.threshold || (await this.confirmCreation())) {
       let overlayRef: OverlayRef;
       setTimeout(() => (overlayRef = this.busyService.show()));
 
@@ -152,9 +159,7 @@ export class AttestationCasesComponent implements OnInit {
         displayedColumns: this.displayedColumns,
         dataSource: datasource,
         entitySchema: this.entitySchemaPolicy,
-        navigationState: this.navigationState,
-        dataModel: this.dataModel,
-        identifierForSessionStore: 'attestatation-cases',
+        navigationState: this.navigationState
       };
 
       this.logger.debug(this, 'matching objects table navigated to', this.navigationState);
@@ -164,9 +169,15 @@ export class AttestationCasesComponent implements OnInit {
   }
 
   private async confirmCreation(): Promise<boolean> {
+    const message = this.ldsReplace.transform(
+      await this.translate
+        .get('#LDS#You have selected more than {0} objects. Attestation of the selected objects may take some time and generate notifications to many approvers. Are you sure you want to start the attestation for the selected objects?')
+        .toPromise(),
+      this.threshold
+    );
     return this.confirmationService.confirm({
-      Title: '#LDS#Heading Start Attestation',
-      Message: '#LDS#You have selected more than 1000 objects. Are you sure you want to start the attestation for all objects?',
+      Title: await this.translate.get('#LDS#Heading Many Objects Affected').toPromise(),
+      Message: message,
     });
   }
 }

@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -64,13 +64,13 @@ export class DependencyService {
   public extendTree(
     tree: ServiceItemHierarchy,
     options?: {
-      Recipient?: string;
-      UidRecipient?: string;
+      Recipients?: string[];
+      UidRecipients?: string[];
       isMandatory: boolean;
       isChecked: boolean;
       isIndeterminate: boolean;
       parentChecked: boolean;
-      parent?: string;
+      parentUid?: string;
     }
   ): ServiceItemHierarchyExtended {
     const extendedTree: ServiceItemHierarchyExtended = {
@@ -80,14 +80,14 @@ export class DependencyService {
       Optional: [],
       ...options,
     };
-    const parent = tree.UidAccProduct;
+    const parentUid = tree.UidAccProduct;
     if (tree?.Mandatory.length > 0) {
       extendedTree.Mandatory = tree.Mandatory.map((childTree) =>
         this.extendTree(childTree, {
           isMandatory: true,
           isChecked: true,
-          isIndeterminate: !options.isChecked,
-          parent,
+          isIndeterminate: !(options.isChecked && options.parentChecked),
+          parentUid,
           parentChecked: options.isChecked,
         })
       );
@@ -97,8 +97,8 @@ export class DependencyService {
         this.extendTree(childTree, {
           isMandatory: false,
           isChecked: false,
-          isIndeterminate: !options.isChecked,
-          parent,
+          isIndeterminate: !(options.isChecked && options.parentChecked),
+          parentUid,
           parentChecked: options.isChecked,
         })
       );
@@ -116,32 +116,28 @@ export class DependencyService {
     try {
       this.busyService.show();
       let optionalCount = 0;
-      const recipientsUids = MultiValue.FromString(recipients.value).GetValues();
-      const recipientsDisplays = MultiValue.FromString(recipients.Column.GetDisplayValue()).GetValues();
+      const uidRecipients = MultiValue.FromString(recipients.value).GetValues();
+      const displayRecipients = MultiValue.FromString(recipients.Column.GetDisplayValue()).GetValues();
       await Promise.all(
         serviceItems.map(async (parentItem) => {
-          await Promise.all(
-            recipientsUids.map(async (recipientUid, index) => {
-              const parentKey = this.getKey(parentItem);
-              const hierarchy = await this.get({
-                UID_AccProductParent: parentKey,
-                UID_Person: recipientUid,
-              });
-              const thisCount = this.countOptional(hierarchy);
-              if (thisCount > 0) {
-                const extendedhierarchy = this.extendTree(hierarchy, {
-                  Recipient: recipientsDisplays[index],
-                  UidRecipient: recipientUid,
-                  isMandatory: true,
-                  isChecked: true,
-                  isIndeterminate: false,
-                  parentChecked: true,
-                });
-                allTrees.trees.push(extendedhierarchy);
-                optionalCount += thisCount;
-              }
-            })
-          );
+          const parentKey = this.getKey(parentItem);
+          const hierarchy = await this.get({
+            UID_AccProductParent: parentKey,
+            UID_Person: uidRecipients.join(','),
+          });
+          const thisCount = this.countOptional(hierarchy);
+          if (thisCount > 0) {
+            const extendedhierarchy = this.extendTree(hierarchy, {
+              Recipients: displayRecipients,
+              UidRecipients: uidRecipients,
+              isMandatory: true,
+              isChecked: true,
+              isIndeterminate: false,
+              parentChecked: true,
+            });
+            allTrees.trees.push(extendedhierarchy);
+            optionalCount += thisCount;
+          }
         })
       );
       allTrees.totalOptional = optionalCount;

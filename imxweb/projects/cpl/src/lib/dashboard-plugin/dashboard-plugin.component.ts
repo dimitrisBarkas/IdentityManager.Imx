@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -24,12 +24,11 @@
  *
  */
 
-import { OverlayRef } from '@angular/cdk/overlay';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { EuiLoadingService } from '@elemental-ui/core';
 
-import { PendingItemsType, UserModelService } from 'qer';
+import { DashboardService, PendingItemsType, UserModelService } from 'qer';
+import { CplPermissionsService } from '../rules/admin/cpl-permissions.service';
 
 @Component({
   templateUrl: './dashboard-plugin.component.html'
@@ -38,21 +37,26 @@ export class DashboardPluginComponent implements OnInit {
 
   public pendingItems: PendingItemsType;
 
+  public isExceptionAdmin = false;
+
   constructor(
     public readonly router: Router,
-    private readonly busyService: EuiLoadingService,
+    private readonly dashboardService: DashboardService,
+    private readonly permissionService: CplPermissionsService,
     private readonly userModelSvc: UserModelService
   ) { }
 
   public async ngOnInit(): Promise<void> {
 
-    let overlayRef: OverlayRef;
-    setTimeout(() => overlayRef = this.busyService.show());
+    const busy = this.dashboardService.beginBusy();
 
     try {
-      this.pendingItems = await this.userModelSvc.getPendingItems();
+      this.isExceptionAdmin = await this.permissionService.isExceptionAdmin();
+      if (this.isExceptionAdmin) {
+        this.pendingItems = await this.userModelSvc.getPendingItems();
+      }
     } finally {
-      setTimeout(() => this.busyService.hide(overlayRef));
+      busy.endBusy();
     }
   }
 }

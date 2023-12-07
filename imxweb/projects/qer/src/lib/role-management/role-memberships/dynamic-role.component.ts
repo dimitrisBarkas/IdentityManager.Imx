@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -24,14 +24,17 @@
  *
  */
 
-import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
 import { EuiLoadingService } from '@elemental-ui/core';
 import { TranslateService } from '@ngx-translate/core';
-import { PortalDynamicgroupInteractive } from 'imx-api-qer';
-import { SqlWizardExpression, IEntity, WriteExtTypedEntity, SqlExpression, isExpressionInvalid, LogOp } from 'imx-qbm-dbts';
-import { BaseCdr, ColumnDependentReference, ConfirmationService } from 'qbm';
+import { PortalDynamicgroup } from 'imx-api-qer';
+import { SqlWizardExpression, WriteExtTypedEntity, SqlExpression, isExpressionInvalid, LogOp } from 'imx-qbm-dbts';
+import { BaseCdr, BaseReadonlyCdr, ColumnDependentReference, ConfirmationService } from 'qbm';
 import { QerApiService } from '../../qer-api-client.service';
 import { RoleService } from '../role.service';
+import _ from 'lodash';
+import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
+import { DataManagementService } from '../data-management.service';
 
 @Component({
   templateUrl: './dynamic-role.component.html',
@@ -39,32 +42,57 @@ import { RoleService } from '../role.service';
   selector: 'imx-dynamic-group',
 })
 export class DynamicRoleComponent implements OnInit {
-
   constructor(
+    formBuilder: UntypedFormBuilder,
     private readonly apiService: QerApiService,
     private readonly roleService: RoleService,
+    private dataManagementService: DataManagementService,
     private readonly translator: TranslateService,
     private readonly cdref: ChangeDetectorRef,
     private readonly confirmSvc: ConfirmationService,
     private readonly busyService: EuiLoadingService
-  ) {}
+  ) {
+    this.formGroup = new UntypedFormGroup({ formArray: formBuilder.array([]) });
+  }
 
   @Input() uidDynamicGroup: string;
-  @Input() public isAdmin: boolean;
-  @Input() public entity: IEntity;
 
+  get formArray(): UntypedFormArray {
+    return this.formGroup.get('formArray') as UntypedFormArray;
+  }
 
-  dynamicGroup: PortalDynamicgroupInteractive;
+  public dynamicGroup: PortalDynamicgroup;
 
-  sqlExpression: SqlWizardExpression;
+  public sqlExpression: SqlWizardExpression;
+  public lastSavedExpression: SqlExpression;
+  public lastSavedCDRs: any[];
 
-  showHelperAlert = true;
-  cdrList: ColumnDependentReference[] = [];
-  busy = true;
+  public showHelperAlert = true;
+  public exprHasntChanged = true;
+  public cdrsHaventChanged = true;
+  public readonly formGroup: UntypedFormGroup;
+  public cdrList: ColumnDependentReference[] = [];
+  public busy = true;
+  public canEdit: boolean;
 
   public async ngOnInit(): Promise<void> {
+    this.canEdit = this.roleService.canEdit;
+    if(!this.canEdit) {
+      this.LdsNoDynamicRole = '#LDS#Currently, no identities automatically become members through a dynamic role.'
+    }
     await this.loadDynamicRole();
-    // TODO: Save off initial state to check if we come back to this state and mark service as clean
+    this.resetState();
+  }
+
+  public resetState(): void {
+    this.lastSavedExpression = _.cloneDeep(this.sqlExpression?.Expression);
+    this.lastSavedCDRs = [];
+    this.cdrList.map((cdr) => {
+      this.lastSavedCDRs.push(cdr.column.GetValue());
+    });
+    this.exprHasntChanged = true;
+    this.cdrsHaventChanged = true;
+    this.formGroup.markAsPristine();
   }
 
   public async save(): Promise<void> {
@@ -77,7 +105,7 @@ export class DynamicRoleComponent implements OnInit {
         await this.dynamicGroup.GetEntity().Commit(true);
       } else {
         const e = <WriteExtTypedEntity<{ NewDynamicRole: SqlExpression }>>(
-          await this.roleService.getInteractive(this.entity.TypeName, this.entity.GetKeys()[0], this.isAdmin)
+          this.dataManagementService.entityInteractive
         );
         e.extendedData = { NewDynamicRole: this.sqlExpression.Expression };
         await e.GetEntity().Commit(true);
@@ -85,8 +113,10 @@ export class DynamicRoleComponent implements OnInit {
         await this.loadDynamicRole();
       }
     } finally {
+      await this.dataManagementService.setInteractive();
+      this.resetState();
       this.busyService.hide();
-      this.roleService.autoMembershipDirty(false);
+      this.dataManagementService.autoMembershipDirty(false);
     }
   }
 
@@ -98,7 +128,7 @@ export class DynamicRoleComponent implements OnInit {
       },
     };
     this.cdref.detectChanges();
-    this.roleService.autoMembershipDirty(true);
+    this.dataManagementService.autoMembershipDirty(true);
   }
 
   public async deleteDynamic(): Promise<void> {
@@ -125,14 +155,41 @@ export class DynamicRoleComponent implements OnInit {
       }
       this.dynamicGroup = null;
       this.sqlExpression = null;
-      this.roleService.autoMembershipDirty(false);
+      this.dataManagementService.autoMembershipDirty(false);
+      await this.dataManagementService.setInteractive();
     } finally {
       this.busyService.hide();
     }
   }
 
+  public checkChanges(): void {
+    this.exprHasntChanged = _.isEqual(this.sqlExpression?.Expression, this.lastSavedExpression);
+    if (!this.exprHasntChanged) {
+      this.dataManagementService.autoMembershipDirty(true);
+    } else if (this.cdrsHaventChanged && this.exprHasntChanged) {
+      this.dataManagementService.autoMembershipDirty(false);
+    }
+  }
+
+  public checkCDRs(): void {
+    this.cdrsHaventChanged = this.cdrList
+      .map((cdr, index) => {
+        return cdr.column.GetValue() === this.lastSavedCDRs[index];
+      })
+      .every((isTrue) => isTrue);
+    if (!this.cdrsHaventChanged) {
+      this.dataManagementService.autoMembershipDirty(true);
+    } else if (this.cdrsHaventChanged && this.exprHasntChanged) {
+      this.dataManagementService.autoMembershipDirty(false);
+    }
+  }
+
   public isConditionInvalid(): boolean {
-    return this.sqlExpression?.Expression?.Expressions.length === 0 || isExpressionInvalid(this.sqlExpression);
+    return (
+      this.sqlExpression?.Expression?.Expressions.length === 0 ||
+      isExpressionInvalid(this.sqlExpression) ||
+      !this.hasValuesSet(this.sqlExpression.Expression)
+    );
   }
 
   private async loadDynamicRole(): Promise<void> {
@@ -143,15 +200,38 @@ export class DynamicRoleComponent implements OnInit {
 
         this.dynamicGroup = data.Data[0];
         this.sqlExpression = data.extendedData.Expressions[0];
+        // Set "" to undefined so the cdr and data dirty states make sense
+        this.sqlExpression?.Expression?.Expressions?.map((exp) => {
+          if (exp.Value === '') {
+            exp.Value = undefined;
+          }
+        });
+        // Sometimes the logOp is not set. Initalize it here
+        if (!this.sqlExpression.IsUnsupported && !this.sqlExpression?.Expression?.LogOperator) {
+          this.sqlExpression.Expression.LogOperator = LogOp.AND;
+        }
 
-        this.cdrList = [
+        this.cdrList = this.canEdit ? [
           new BaseCdr(this.dynamicGroup.UID_DialogSchedule.Column),
           new BaseCdr(this.dynamicGroup.IsCalculateImmediately.Column),
+        ] : [
+          new BaseReadonlyCdr(this.dynamicGroup.UID_DialogSchedule.Column),
+          new BaseReadonlyCdr(this.dynamicGroup.IsCalculateImmediately.Column),
         ];
       }
     } finally {
       this.busy = false;
     }
+  }
+
+  private hasValuesSet(sqlExpression: SqlExpression, checkCurrent: boolean = false): boolean {
+    const current = !checkCurrent || (sqlExpression.Value != null && Object.keys(sqlExpression.Value).length > 0);
+
+    if (sqlExpression.Expressions?.length > 0) {
+      return current && sqlExpression.Expressions.every((elem) => this.hasValuesSet(elem, true));
+    }
+
+    return current;
   }
 
   LdsUnsupportedExpression = '#LDS#You cannot edit these automatic memberships conditions in the Web Portal.';

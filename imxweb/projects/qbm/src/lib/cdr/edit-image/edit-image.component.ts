@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -24,9 +24,9 @@
  *
  */
 
-import { Component, EventEmitter, OnDestroy } from '@angular/core';
-import { FormControl, Validators } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Component, ElementRef, EventEmitter, OnDestroy, ViewChild } from '@angular/core';
+import { UntypedFormControl, Validators } from '@angular/forms';
+import { Subject, Subscription } from 'rxjs';
 
 import { ColumnDependentReference } from '../column-dependent-reference.interface';
 import { CdrEditor, ValueHasChangedEventArg } from '../cdr-editor.interface';
@@ -41,14 +41,18 @@ import { FileSelectorService } from '../../file-selector/file-selector.service';
 @Component({
   selector: 'imx-edit-image',
   templateUrl: './edit-image.component.html',
-  styleUrls: ['./edit-image.component.scss']
+  styleUrls: ['./edit-image.component.scss'],
 })
 export class EditImageComponent implements CdrEditor, OnDestroy {
+  @ViewChild('file') public fileInput: ElementRef;
+
   public get fileFormatHint(): string {
     return this.fileFormatError ? '#LDS#Please select an image in PNG format.' : undefined;
   }
 
-  public readonly control = new FormControl(undefined);
+  public readonly updateRequested = new Subject<void>();
+
+  public readonly control = new UntypedFormControl(undefined);
 
   public readonly columnContainer = new EntityColumnContainer<string>();
   public readonly valueHasChanged = new EventEmitter<ValueHasChangedEventArg>();
@@ -66,17 +70,13 @@ export class EditImageComponent implements CdrEditor, OnDestroy {
     private readonly fileSelector: FileSelectorService
   ) {
     this.subscriptions.push(
-      this.fileSelector.fileFormatError.subscribe(() =>
-        this.fileFormatError = true
-      ),
-      this.fileSelector.fileSelected.subscribe(filepath =>
-        this.writeValue(this.imageProvider.getImageData(filepath))
-      )
+      this.fileSelector.fileFormatError.subscribe(() => (this.fileFormatError = true)),
+      this.fileSelector.fileSelected.subscribe((filepath) => this.writeValue(this.imageProvider.getImageData(filepath)))
     );
   }
 
   public ngOnDestroy(): void {
-    this.subscriptions.forEach(s => s.unsubscribe());
+    this.subscriptions.forEach((s) => s.unsubscribe());
   }
 
   /**
@@ -90,14 +90,43 @@ export class EditImageComponent implements CdrEditor, OnDestroy {
       if (this.columnContainer.isValueRequired && this.columnContainer.canEdit) {
         this.control.setValidators(Validators.required);
       }
-      this.subscriptions.push(this.columnContainer.subscribe(() => {
-        if (this.isWriting) { return; }
-        if (this.control.value !== this.columnContainer.value) {
-          this.logger.trace(this, 'Control set to new value');
-          this.control.setValue(this.columnContainer.value, { emitEvent: false });
-        }
-        this.valueHasChanged.emit({value: this.control.value});
-      }));
+
+      if (cdref.minlengthSubject) {
+        this.subscriptions.push(
+          cdref.minlengthSubject.subscribe(() => {
+            this.setValidators();
+          })
+        );
+      }
+      this.subscriptions.push(
+        this.columnContainer.subscribe(() => {
+          if (this.isWriting) {
+            return;
+          }
+          if (this.control.value !== this.columnContainer.value) {
+            this.logger.trace(this, 'Control set to new value');
+            this.control.setValue(this.columnContainer.value, { emitEvent: false });
+          }
+          this.valueHasChanged.emit({ value: this.control.value });
+        })
+      );
+
+      this.subscriptions.push(
+        this.updateRequested.subscribe(() => {
+          setTimeout(() => {
+            try {
+              if (this.control.value !== this.columnContainer.value) {
+                this.logger.trace(this, 'Control set to new value');
+                this.control.setValue(this.columnContainer.value, { emitEvent: false });
+              }
+              this.valueHasChanged.emit({ value: this.control.value });
+              this.setValidators();
+              this.control.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+            } finally {
+            }
+          });
+        })
+      );
     }
   }
 
@@ -114,10 +143,23 @@ export class EditImageComponent implements CdrEditor, OnDestroy {
    * removes the current image
    */
   public async remove(): Promise<void> {
+    this.fileInput.nativeElement.value = '';
     this.fileFormatError = false;
 
     this.logger.debug(this, 'Removing current image...');
     await this.writeValue(undefined);
+  }
+
+  /**
+   * Sets Validators.required, if the control is mandatory, else it's set to null.
+   * @ignore used internally
+   */
+  private setValidators() {
+    if (this.columnContainer.isValueRequired && this.columnContainer.canEdit) {
+      this.control.setValidators(Validators.required);
+    } else {
+      this.control.setValidators(null);
+    }
   }
 
   /**
@@ -148,7 +190,7 @@ export class EditImageComponent implements CdrEditor, OnDestroy {
         this.control.setValue(this.columnContainer.value, { emitEvent: false });
         this.logger.debug(this, 'form control value is set to', this.control.value);
       }
-      this.valueHasChanged.emit({value: this.control.value, forceEmit: true});
+      this.valueHasChanged.emit({ value: this.control.value, forceEmit: true });
     }
 
     this.control.markAsDirty();

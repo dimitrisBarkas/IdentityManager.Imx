@@ -9,7 +9,7 @@
  * those terms.
  *
  *
- * Copyright 2022 One Identity LLC.
+ * Copyright 2023 One Identity LLC.
  * ALL RIGHTS RESERVED.
  *
  * ONE IDENTITY LLC. MAKES NO REPRESENTATIONS OR
@@ -24,7 +24,7 @@
  *
  */
 
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { MatDatepickerInputEvent } from '@angular/material/datepicker';
 import { DateDiffUnit } from 'imx-qbm-dbts';
 import { SqlNodeView } from './SqlNodeView';
@@ -37,6 +37,7 @@ import { DateDiffOption, SqlWizardService } from './sqlwizard.service';
 })
 export class DatePickerComponent implements OnInit {
   public absoluteError = false;
+
 
   get diffUnit(): DateDiffUnit {
     return this.diffValue.TimeUnit;
@@ -54,6 +55,7 @@ export class DatePickerComponent implements OnInit {
   }
 
   @Input() public expr: SqlNodeView;
+  @Output() public change = new EventEmitter<any>();
 
   public diffValue: {
     Difference?: number,
@@ -75,7 +77,14 @@ export class DatePickerComponent implements OnInit {
     }
   }
 
+  public emitChanges(): void {
+    this.change.emit();
+  }
+
   public onAbsoluteChange(date: MatDatepickerInputEvent<Date>): void {
     this.absoluteError = !date.value ? true : false;
+    if (!this.absoluteError) {
+      this.emitChanges();
+    }
   }
 }
