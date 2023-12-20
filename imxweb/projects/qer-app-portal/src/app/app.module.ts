@@ -34,7 +34,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { EuiCoreModule, EuiMaterialModule } from '@elemental-ui/core';
 import { MissingTranslationHandler, TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LoggerModule, NgxLoggerLevel } from 'ngx-logger';
-
+import { DataExplorerPocModule } from '../../../qer/src/lib/data-explorer-poc/data-explorer-poc.module';
 import {
   AuthenticationModule,
   CdrRegistryService,
@@ -77,7 +77,7 @@ import {
   MyResponsibilitiesViewModule,
   ApprovalWorkFlowModule,
   UserProcessModule,
-  TeamResponsibilitiesModule
+  TeamResponsibilitiesModule,
 } from 'qer';
 
 import { APP_BASE_HREF } from '@angular/common';
@@ -146,7 +146,8 @@ export function getBaseHref(): string {
     MyResponsibilitiesViewModule,
     ApprovalWorkFlowModule,
     UserProcessModule,
-    TeamResponsibilitiesModule
+    TeamResponsibilitiesModule,
+    DataExplorerPocModule
   ],
   providers: [
     { provide: 'environment', useValue: environment },

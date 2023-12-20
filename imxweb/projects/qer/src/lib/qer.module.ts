@@ -67,6 +67,7 @@ import { TilesModule } from './tiles/tiles.module';
 import { UserModule } from './user/user.module';
 import { BusinessOwnerChartSummaryComponent } from './wport/businessowner-chartsummary/businessowner-chartsummary.component';
 import { StartComponent } from './wport/start/start.component';
+import { DataExplorerPocComponentComponent } from './data-explorer-poc/data-explorer-poc-component/data-explorer-poc-component.component';
 
 export function initConfig(config: QerService): () => Promise<any> {
   return () =>
@@ -85,11 +86,17 @@ const routes: Routes = [
     canActivate: [RouteGuardService],
     resolve: [RouteGuardService],
   },
+  {
+    path: 'data-explorer-poc-component',
+    component: DataExplorerPocComponentComponent,
+    canActivate: [RouteGuardService],
+    resolve: [RouteGuardService],
+  }
 ];
 
 // @dynamic
 @NgModule({
-  declarations: [StartComponent, BusinessOwnerChartSummaryComponent, SettingsComponent],
+  declarations: [StartComponent, BusinessOwnerChartSummaryComponent, SettingsComponent, SideMenuPocComponent],
   imports: [
     CommonModule,
     RouterModule.forChild(routes),
