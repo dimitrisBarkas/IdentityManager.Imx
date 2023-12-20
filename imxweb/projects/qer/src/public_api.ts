@@ -201,4 +201,4 @@ export { ViewDevicesModule } from './lib/view-devices/view-devices.module';
 export { ViewDevicesComponent } from './lib/view-devices/view-devices-home/view-devices.component';
 export { ViewDevicesSidesheetComponent } from './lib/view-devices/view-devices-sidesheet/view-devices-sidesheet.component';
 export { AuthenticationFactors } from './lib/admin/authentication-factors.interface';
-
+export { DataExplorerPocModule } from './lib/data-explorer-poc/data-explorer-poc.module'
