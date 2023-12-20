@@ -96,7 +96,7 @@ const routes: Routes = [
 
 // @dynamic
 @NgModule({
-  declarations: [StartComponent, BusinessOwnerChartSummaryComponent, SettingsComponent, SideMenuPocComponent],
+  declarations: [StartComponent, BusinessOwnerChartSummaryComponent, SettingsComponent],
   imports: [
     CommonModule,
     RouterModule.forChild(routes),
