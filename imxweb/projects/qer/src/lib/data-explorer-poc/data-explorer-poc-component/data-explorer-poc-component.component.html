@@ -1,3 +1,9 @@
+<mat-drawer-container class="drawer-container">
+  <mat-drawer #drawer mode="over" position="end" class="drawer">
+    <!-- Your side sheet content goes here -->
+    <ccc-detail-side-sheet></ccc-detail-side-sheet>
+  </mat-drawer>
+
 <div class="app-container">
   <div class="side-nav">
     <div class="side-nav-title">
@@ -29,40 +35,30 @@
   <div class="content">
     
       <span class="content-title">Business Roles</span>
-<!--       <div class="data-explorer-card-header">
-        <div class="data-explorer-card-header-bg">
-          <span translate>#LDS#Identities</span>       
-        </div>
-      </div> -->
         <mat-form-field appearance="outline" class="search-width">
           <mat-label>Search</mat-label>
           <mat-icon matPrefix>search</mat-icon>
           <input matInput>
         </mat-form-field>
-      <div class="scrollable-table">
-        <table mat-table [dataSource]="tableDataSource">
-          <ng-container matColumnDef="displayName">
-            <th mat-header-cell *matHeaderCellDef>Display name</th>
-            <td mat-cell *matCellDef="let element">{{ element.Ident_Org }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="roleClass">
-            <th mat-header-cell *matHeaderCellDef>Role class</th>
-            <td mat-cell *matCellDef="let element">{{ element.UID_OrgRoot }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="fullName">
-            <th mat-header-cell *matHeaderCellDef>Full name</th>
-            <td mat-cell *matCellDef="let element">{{ element.FullPath }}</td>
-          </ng-container>
-
-          <!-- Header and row definitions -->
-          <tr mat-header-row *matHeaderRowDef="['displayName', 'roleClass', 'fullName']"></tr>
-          <tr mat-row *matRowDef="let row; columns: ['displayName', 'roleClass', 'fullName']"></tr>
-        </table>
-      </div>
+        <div class="scrollable-table">
+          <table mat-table [dataSource]="tableDataSource">
+            
+            <!-- Dynamically Created Columns -->
+            <ng-container *ngFor="let column of displayedColumns" [matColumnDef]="column">
+              <th mat-header-cell *matHeaderCellDef> {{ column }} </th>
+              <td mat-cell *matCellDef="let element"> {{ element[column] }} </td>
+            </ng-container>
+    
+            <!-- Header and Row Definitions -->
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="openDetailSideSheet()"></tr>
+    
+          </table>
+        </div>
   
       <mat-paginator #paginator [pageSizeOptions]="[20, 100, 200]" showFirstLastButtons></mat-paginator>
 
   </div>
 </div>
+
+</mat-drawer-container>

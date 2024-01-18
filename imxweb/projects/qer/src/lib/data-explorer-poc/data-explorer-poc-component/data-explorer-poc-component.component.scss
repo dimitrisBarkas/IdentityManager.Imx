@@ -11,6 +11,30 @@
     height: 100vh;
     background-color: #f9fbfc;
   }
+  .drawer-container {
+    // Ensure the container takes full height if needed
+    height: 100%;
+  }
+  
+  .drawer {
+    width: 80vw; // This sets the width to 80% of the viewport width
+    max-width: 80vw; // Optional: Ensures the drawer does not exceed a certain width
+    position: fixed; // Ensures the drawer overlays content
+    top: 0; // Positions the drawer at the top of the viewport
+    right: 0; // Positions the drawer on the right side of the viewport
+    height: 100%; // Makes the drawer full height
+    z-index: 1000; // Ensures the drawer is above other content
+    // If you have an existing box-shadow or other styles you want to apply to the drawer, add them here
+  }
+  
+  // Make sure to include this if you haven't already
+  .mat-drawer-container {
+    overflow: hidden; // Prevents scrolling of content when the drawer is open
+  }
+  .mat-drawer {
+  /* ... existing styles ... */
+  box-shadow: -5px 0 10px rgba(0, 0, 0, 0.25); // Adds a shadow on the left side
+}
   
   .side-nav {
     width: 230px;
@@ -57,16 +81,16 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    margin: 20px;
+    margin: 20px 20px 0px 20px;
     background-color: white;
       .search-width{
         width: 100%;
         margin: 0%;
-        padding: 0 20px 0 20px;
+        padding: 0 20px 0px 20px;
       }
       
       input {
-        padding: 8px;
+        padding: 7px;
         margin-right: 8px;
       }
 
@@ -90,6 +114,15 @@
         flex-grow: 1;
         max-height: 600px;
         margin: 0 10px 0 10px;
+
+        table {
+          tr {
+            cursor: pointer;
+            &:hover {
+              background-color: #e0e0e0; // For hover effect
+            }
+          }
+        }
       }
 
       @media (max-height: 1024px) {

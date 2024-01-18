@@ -9,11 +9,15 @@ import { EuiCoreModule, EuiMaterialModule } from '@elemental-ui/core';
 import { DataSourceToolbarModule, DataTableModule, LdsReplaceModule, QbmModule } from 'qbm';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDialogModule } from '@angular/material/dialog'
 import { MatInputModule } from '@angular/material/input';
 import { DataExplorerPocComponentComponent } from './data-explorer-poc-component/data-explorer-poc-component.component';
+import { DetailSideSheetComponent } from './detail-side-sheet/detail-side-sheet.component';
+
 @NgModule({
   declarations: [
     DataExplorerPocComponentComponent,
+    DetailSideSheetComponent,
   ],
   imports: [
     CommonModule,
@@ -22,6 +26,7 @@ import { DataExplorerPocComponentComponent } from './data-explorer-poc-component
     MatInputModule,
     MatIconModule,
     MatListModule,
+    MatDialogModule,
     MatButtonModule,
     TranslateModule,
     LdsReplaceModule,
@@ -30,6 +35,7 @@ import { DataExplorerPocComponentComponent } from './data-explorer-poc-component
     DataSourceToolbarModule,
     DataTableModule,
     QbmModule,
+    MatSidenavModule,
     MatSidenavModule
   ],
   exports: [
