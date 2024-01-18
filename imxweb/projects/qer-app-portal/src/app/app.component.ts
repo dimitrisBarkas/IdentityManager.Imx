@@ -127,6 +127,7 @@ export class AppComponent implements OnInit, OnDestroy {
       case route.includes('dataexplorer'):
       case route.includes('myresponsibilities'):
       case route.includes('newrequest'):
+      case route.includes('data-explorer-plus'):
         // Check for all children of data explorer and new request
         return true;
       case route.endsWith('statistics'):

@@ -201,4 +201,6 @@ export { ViewDevicesModule } from './lib/view-devices/view-devices.module';
 export { ViewDevicesComponent } from './lib/view-devices/view-devices-home/view-devices.component';
 export { ViewDevicesSidesheetComponent } from './lib/view-devices/view-devices-sidesheet/view-devices-sidesheet.component';
 export { AuthenticationFactors } from './lib/admin/authentication-factors.interface';
+export { DataExplorerPlusModule } from './lib/data-explorer-plus/data-explorer-plus.module'
+export { DataExplorerPlusSidenavComponent } from './lib/data-explorer-plus/data-explorer-plus-sidenav/data-explorer-plus-sidenav.component';
 

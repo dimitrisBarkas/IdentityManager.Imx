@@ -67,6 +67,8 @@ import { TilesModule } from './tiles/tiles.module';
 import { UserModule } from './user/user.module';
 import { BusinessOwnerChartSummaryComponent } from './wport/businessowner-chartsummary/businessowner-chartsummary.component';
 import { StartComponent } from './wport/start/start.component';
+import { DataExplorerPlusComponent } from './data-explorer-plus/data-explorer-plus.component';
+import { DataExplorerPlusSidenavComponent } from './data-explorer-plus/data-explorer-plus-sidenav/data-explorer-plus-sidenav.component';
 
 export function initConfig(config: QerService): () => Promise<any> {
   return () =>
@@ -82,6 +84,18 @@ const routes: Routes = [
   {
     path: 'dashboard',
     component: StartComponent,
+    canActivate: [RouteGuardService],
+    resolve: [RouteGuardService],
+  },
+  {
+    path: 'data-explorer-plus',
+    component: DataExplorerPlusComponent,
+    canActivate: [RouteGuardService],
+    resolve: [RouteGuardService],
+  },
+  {
+    path: 'data-explorer-plus-sidenav',
+    component: DataExplorerPlusSidenavComponent,
     canActivate: [RouteGuardService],
     resolve: [RouteGuardService],
   },
