@@ -1,0 +1,44 @@
+.app-container {
+    display: flex;
+    height: 100vh;
+    background-color: #f9fbfc;
+  }
+
+  .side-nav {
+    width: 230px;
+    background-color: white;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    box-shadow: 0 2px 1px -1px #2f323333, 0 1px 1px #2f323324, 0 1px 3px #2f32331f;
+    .side-nav-title{
+        font-weight: bold;
+        padding: 10px;
+    }
+    .nav-item {
+      width: 100%;
+      padding: 10px;
+      margin: 0;
+
+      &:hover {
+        background-color: #8acbe380; // Hover state color
+      }
+
+      &.active {
+        background-color: #0a96d1; // Active state background color
+        a {
+            color: #fff; // Text color when the tab is active
+          }
+      }
+
+      a {
+        display: block;
+        color: #000; // Text color
+        text-decoration: none;
+        &:hover {
+          text-decoration: none;
+        }
+      }
+    }
+  }

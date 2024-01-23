@@ -1,0 +1,64 @@
+.content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin: 20px;
+    background-color: white;
+      .search-width{
+        width: 100%;
+        margin: 0%;
+        padding: 0 20px 0 20px;
+      }
+
+      input {
+        padding: 8px;
+        margin-right: 8px;
+      }
+      .content-title{
+        margin: 20px 20px 0 20px;
+        padding: 10px;
+        height: 45px;
+        background-color: #cbe8f2;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+        border: 1px solid rgba(10,150,209,.6);
+        display: flex;
+        justify-content: flex-start;
+        & > span {
+          font-size: 20px;
+        }
+      } 
+      .scrollable-table {
+        overflow-y: auto;
+        flex-grow: 1;
+        max-height: 600px;
+        margin: 0 10px 0 10px;
+      }
+      @media (max-height: 1024px) {
+        .scrollable-table {
+          max-height: 300px; // Adjust as needed for smaller viewports
+        }
+
+        // You may want to adjust the padding or margins as well
+        .content {
+          padding: 10px; // Reduced padding for smaller viewports
+        }
+
+        // If the side navigation is too wide for smaller screens, adjust its width
+        .side-nav {
+          width: 200px; // Adjusted width for smaller screens
+        }
+      }
+
+      // If you need to target even smaller viewports, add another media query
+      @media (max-height: 600px) {
+        .scrollable-table {
+          max-height: 200px; // Further reduced for very small viewports
+        }
+        // Continue adjusting other elements as needed
+      }
+    .mat-paginator{
+      box-shadow: 0 5px 5px -5px rgba(0, 0, 0, 0.75);
+    }
+}
