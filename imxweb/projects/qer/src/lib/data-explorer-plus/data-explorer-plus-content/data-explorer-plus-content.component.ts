@@ -22,7 +22,10 @@ interface UserObject{
 })
 export class DataExplorerPlusContentComponent implements OnInit {
 
-  tableDataSource: MatTableDataSource<UserObject> = new MatTableDataSource<UserObject>([]);
+  constructor(){}
+  ngOnInit(): void {}
+
+/*   tableDataSource: MatTableDataSource<UserObject> = new MatTableDataSource<UserObject>([]);
   businessRoles: UserObject[] = [];
   // Initialize 'selectedTab' to the default tab that should be open
   selectedTab: string = 'businessRoles';
@@ -63,5 +66,5 @@ export class DataExplorerPlusContentComponent implements OnInit {
       observe: 'response',
       responseType: 'json',
     };
-  }
+  } */
 }
