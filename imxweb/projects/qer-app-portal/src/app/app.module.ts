@@ -89,6 +89,7 @@ import { AppComponent } from './app.component';
 import { AppService } from './app.service';
 import { PortalHyperviewService } from './hyperview/portal-hyperview.service';
 import { PortalHistoryService } from './portal-history.service';
+import { MatSidenavModule } from '@angular/material/sidenav';
 
 export const HEADLESS_BASEHREF = '/headless';
 export function getBaseHref(): string {
@@ -118,6 +119,7 @@ export function getBaseHref(): string {
     StatisticsModule,
     QpmIntegrationModule,
     CustomThemeModule,
+    MatSidenavModule,
     TranslateModule.forRoot({
       loader: {
         provide: TranslateLoader,

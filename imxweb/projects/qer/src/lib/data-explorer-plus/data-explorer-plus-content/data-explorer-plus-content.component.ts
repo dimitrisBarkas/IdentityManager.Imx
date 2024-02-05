@@ -22,19 +22,8 @@ interface UserObject{
 })
 export class DataExplorerPlusContentComponent implements OnInit {
 
-  constructor(){}
-  ngOnInit(): void {}
-
-/*   tableDataSource: MatTableDataSource<UserObject> = new MatTableDataSource<UserObject>([]);
+  tableDataSource: MatTableDataSource<UserObject> = new MatTableDataSource<UserObject>([]);
   businessRoles: UserObject[] = [];
-  // Initialize 'selectedTab' to the default tab that should be open
-  selectedTab: string = 'businessRoles';
-  // Method to set the selectedTab, called when a nav item is clicked
-  selectTab(tabName: string) {
-    this.selectedTab = tabName;
-  }
-
-  @ViewChild('drawer') drawer: MatDrawer
 
   constructor(private readonly config: AppConfigService){}
 
@@ -47,8 +36,6 @@ export class DataExplorerPlusContentComponent implements OnInit {
       this.businessRoles = response;
       this.tableDataSource.data = this.businessRoles;
       console.log("API response:", response);
-      console.log("BR Array:", this.businessRoles);
-      console.log("Table data", this.tableDataSource.data);
     } catch (error) {
       console.error('Error fetching users data:', error);
     }
@@ -56,7 +43,7 @@ export class DataExplorerPlusContentComponent implements OnInit {
   private getBusinessRoleDataDescriptor(): MethodDescriptor<UserObject> {
     const parameters = [];
     return {
-      path: `/portal/ORG_GET`,
+      path: `/portal/dataexplorer/content`,
       parameters,
       method: 'GET',
       headers: {
@@ -66,5 +53,5 @@ export class DataExplorerPlusContentComponent implements OnInit {
       observe: 'response',
       responseType: 'json',
     };
-  } */
+  }
 }

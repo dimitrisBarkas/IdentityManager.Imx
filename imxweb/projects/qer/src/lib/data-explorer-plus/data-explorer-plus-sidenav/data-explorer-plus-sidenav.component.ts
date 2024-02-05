@@ -10,10 +10,9 @@ import { MatTableDataSource } from '@angular/material/table';
 import { FormControl } from '@angular/forms';
 import { AppConfigService, DataSourceToolbarFilter, DataSourceToolbarSettings } from 'qbm';
 
-interface UserObject{
+interface Category {
   Column: string;
   Value: string;
-  IdentQBMLimitedSQL: string;
 }
 
 @Component({
@@ -22,6 +21,61 @@ interface UserObject{
   styleUrls: ['./data-explorer-plus-sidenav.component.scss']
 })
 export class DataExplorerPlusSidenavComponent implements OnInit {
+  categories: Category[][] = [];
+  selectedTab: string = ''; // Initialize selectedTab
+
+  constructor(private readonly config: AppConfigService){}
+
+  ngOnInit(): void {
+    this.fetchSideNavCategories();
+  }
+
+  public async fetchSideNavCategories(): Promise<void> {
+    try {
+      const response = await this.config.apiClient.processRequest<Category[][]>(this.getSideNavDescriptor());
+      // Assign the response directly to categories without any additional transformation
+      this.categories = response;
+      console.log("API response:", response);
+
+      // Initialize selectedTab with the first category when data is loaded
+      if (this.categories.length > 0 && this.categories[0].length > 0) {
+        this.selectedTab = this.categories[0][0].Value;
+      }
+    } catch (error) {
+      console.error('Error fetching categories data:', error);
+    }
+  }
+
+  private getSideNavDescriptor(): MethodDescriptor<Category> {
+    const parameters = [];
+    return {
+      path: `/portal/dataexplorer/categories`,
+      parameters,
+      method: 'GET',
+      headers: {
+        'imx-timezone': TimeZoneInfo.get()
+      },
+      credentials: 'include',
+      observe: 'response',
+      responseType: 'json',
+    };
+  }
+
+  // Handle tab selection
+  selectTab(tabName: string) {
+    this.selectedTab = tabName;
+  }
+}
+
+
+/*   
+  interface UserObject{
+  Column: string;
+  Value: string;
+  IdentQBMLimitedSQL: string;
+}
+
+
 
   categories: UserObject[] = [];
 
@@ -65,5 +119,4 @@ export class DataExplorerPlusSidenavComponent implements OnInit {
       observe: 'response',
       responseType: 'json'
     };
-  }
-}
+  } */

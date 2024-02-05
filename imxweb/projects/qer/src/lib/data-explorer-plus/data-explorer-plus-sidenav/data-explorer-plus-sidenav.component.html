@@ -1,25 +1,17 @@
 <div class="app-container">
-    <div class="side-nav">
-      <div class="side-nav-title">
-        <span>Data Explorer +</span>
-      </div>
-      <div class="nav-item">
-        <a>Business Roles</a>
-      </div>
-      <div class="nav-item">
-        <a>System Roles</a>
-      </div>
-      <div class="nav-item">
-        <a>Identities</a>
-      </div>
-      <div class="nav-item">
-        <a>User accounts</a>
-      </div>
-      <div class="nav-item">
-        <a>Departments</a>
-      </div>
-      <div class="nav-item">
-        <a>Locations</a>
-      </div>
+  <div class="side-nav">
+    <div class="side-nav-title">
+      <span>Data Explorer +</span>
     </div>
+    <!-- Iterate over the outer array of categories -->
+    <ng-container *ngFor="let categoryArray of categories">
+      <!-- Iterate over the inner array of Category objects -->
+      <ng-container *ngFor="let category of categoryArray">
+        <div class="nav-item" [class.active]="selectedTab === category.Value" (click)="selectTab(category.Value)">
+          <!-- Display the 'Value' property of the Category object -->
+          <a>{{ category.Value }}</a>
+        </div>
+      </ng-container>
+    </ng-container>
+  </div>
 </div>
