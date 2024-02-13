@@ -51,7 +51,7 @@ const routes: Routes = [
 
 @NgModule({
   declarations: [
-    DataExplorerPlusComponent
+    DataExplorerPlusComponent,
   ],
   imports: [
     CdkTableModule,

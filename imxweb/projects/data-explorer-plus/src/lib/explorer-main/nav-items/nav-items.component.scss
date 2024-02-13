@@ -1,0 +1,45 @@
+.side-nav {
+    width: 230px; // You can adjust the width as needed
+    background-color: white;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    box-shadow: 0 2px 1px -1px #2f323333, 0 1px 1px #2f323324, 0 1px 3px #2f32331f;
+    height: 100vh;
+  
+    .side-nav-title {
+      font-weight: bold;
+      padding: 10px;
+    }
+  
+    .nav-item {
+      width: 100%;
+      padding: 10px;
+      margin: 0;
+      cursor: pointer;
+  
+      &:hover {
+        background-color: #8acbe380;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.25); // Add a shadow when hovering
+      }
+  
+      &.active {
+        font-weight: bold; // Make the text bold for the selected item
+        background-color: #0a96d1;
+        box-shadow: 0 2px 1px -1px #2f323333, 0 1px 1px #2f323324, 0 1px 3px #2f32331f; // Restore the original shadow
+        a {
+          color: #fff;
+        }
+      }
+  
+      a {
+        display: block;
+        color: #000;
+        text-decoration: none;
+        &:hover {
+          text-decoration: none;
+        }
+      }
+    }
+  }

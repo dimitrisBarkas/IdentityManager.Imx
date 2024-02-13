@@ -1,5 +1,15 @@
-<mat-list>
-    <mat-list-item><span>Item 1</span></mat-list-item>
-    <mat-list-item><span>Item 2</span></mat-list-item>
-    <mat-list-item><span>Item 3</span></mat-list-item>
-</mat-list>
+<div class="app-container">
+    <div class="side-nav">
+      <h1>Data Explorer +</h1>
+      <!-- Iterate over the outer array of categories -->
+      <ng-container *ngFor="let categoryArray of categories">
+        <!-- Iterate over the inner array of Category objects -->
+        <ng-container *ngFor="let category of categoryArray">
+          <div class="nav-item" [class.active]="selectedTab === category.Value" (click)="selectTab(category.Value)">
+            <!-- Display the 'Value' property of the Category object -->
+            <a>{{ category.Value }}</a>
+          </div>
+        </ng-container>
+      </ng-container>
+    </div>
+  </div>
