@@ -3,9 +3,6 @@ import { CommonModule } from '@angular/common';
 import { TilesModule } from 'qer';
 import { DataExplorerPlusComponent } from './data-explorer-plus.component';
 import { DataExplorerPlusService } from './data-explorer-plus.service';
-import { DataExplorerSidenav } from './explorer-main/sidenav.component';
-import { DataExplorerNavItems } from './explorer-main/nav-items/nav-items.component';
-import { DataExplorerTable } from './explorer-main/data-table/data-table.component'
 import { ClassloggerService,
           CdrModule,
           LdsReplaceModule,
@@ -37,7 +34,8 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { CdkTableModule } from '@angular/cdk/table';
-
+import { DataExplorerPlusDetailsComponent } from './data-explorer-plus-details/data-explorer-plus-details.component';
+import { MatTabsModule } from '@angular/material/tabs';
 
 
 const routes: Routes = [
@@ -51,7 +49,8 @@ const routes: Routes = [
 
 @NgModule({
   declarations: [
-    DataExplorerPlusComponent
+    DataExplorerPlusComponent,
+    DataExplorerPlusDetailsComponent,
   ],
   imports: [
     CdkTableModule,
@@ -85,15 +84,10 @@ const routes: Routes = [
     TileModule,
     DataTreeModule,
     FkAdvancedPickerModule,
-    DataExplorerSidenav,
-    DataExplorerNavItems,
-    DataExplorerTable
+    MatTabsModule
   ],
   exports: [
     DataExplorerPlusComponent,
-    DataExplorerSidenav,
-    DataExplorerNavItems,
-    DataExplorerTable
   ]
 })
 export class DataExplorerPlusModule {
@@ -103,4 +97,3 @@ export class DataExplorerPlusModule {
     this.logger.info(this, '▶️ data-explorer-plus initialized');
   }
 }
-
