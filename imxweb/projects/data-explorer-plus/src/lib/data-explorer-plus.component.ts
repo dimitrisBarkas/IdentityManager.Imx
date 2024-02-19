@@ -7,19 +7,13 @@ import { AppConfigService, AuthenticationService } from 'qbm';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DataExplorerPlusService } from './data-explorer-plus.service';
+import { DataExplorerPlusService, ExplorerItem } from './data-explorer-plus.service';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { EuiSidesheetRef, EuiSidesheetService, EUI_SIDESHEET_DATA } from '@elemental-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 import { DataExplorerPlusDetailsComponent } from './data-explorer-plus-details/data-explorer-plus-details.component';
-
-interface ExplorerItem {
-  ConfigParm: string;
-  Value: string;
-  Children: ExplorerItem[];
-}
 
 interface IdentQBMLimitedSQLType {
   IdentQBMLimitedSQL: string | null;
@@ -122,35 +116,24 @@ export class DataExplorerPlusComponent implements OnInit, OnDestroy, AfterViewIn
     this.selectedCategory = configParm;
     this.IdentQBMLimitedSQL = null;
 
-    // Find the corresponding ExplorerItem for the selected category
-    const findSelectStmt = (items: ExplorerItem[]): string | null => {
-      for (const item of items) {
-        if (item.ConfigParm === configParm) {
-          // If this is the selected category, look for the selectStmt in its children
-          const selectStmtItem = item.Children.find(child => child.ConfigParm === 'selectStmt');
-          return selectStmtItem ? selectStmtItem.Value : null;
-        } else if (item.Children.length > 0) {
-          // Recursively search in children
-          const result = findSelectStmt(item.Children);
-          if (result) return result; // If found in sub-children, return it
-        }
-      }
-      return null; // Return null if not found at all
-    };
-
-    // Set the IdentQBMLimitedSQL based on the found selectStmt, or keep it null if not found
-    const selectStmtValue = findSelectStmt(this.dataSourcedynamic);
+    // Use the service's method to find the selectStmt for the selected category
+    const selectStmtValue = this.service.findSelectStmt(this.dataSourcedynamic, configParm);
     if (selectStmtValue) {
-      this.IdentQBMLimitedSQL = {
-        IdentQBMLimitedSQL: selectStmtValue,
-        xKey: "something",
-        xSubKey: "something"
-      };
+        this.IdentQBMLimitedSQL = {
+            IdentQBMLimitedSQL: selectStmtValue,
+            xKey: "something",  // Adjust these as needed based on your application's logic
+            xSubKey: "something"
+        };
+        console.log('IdentQBMLimitedSQL:', this.IdentQBMLimitedSQL);
+        console.log(this.selectedCategory);
+        // Assuming executeSQL is a method that takes IdentQBMLimitedSQLType and does something with it
+        this.executeSQL(this.IdentQBMLimitedSQL);
+    } else {
+        // Handle the case where no selectStmt is found
+        console.error('Select statement not found for the configParm:', configParm);
     }
-    console.log('IdentQBMLimitedSQL:', this.IdentQBMLimitedSQL);
-    console.log(this.selectedCategory);
-    this.executeSQL(this.IdentQBMLimitedSQL);
   }
+
 
   applyFilter(): void {
     const filterValue = this.searchControl.value;

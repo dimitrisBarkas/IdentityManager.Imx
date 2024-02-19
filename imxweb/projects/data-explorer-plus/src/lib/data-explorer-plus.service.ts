@@ -7,8 +7,7 @@ import { SystemInfo } from 'imx-api-qbm';
 import { MethodDescriptor, TimeZoneInfo } from 'imx-qbm-dbts';
 import { BehaviorSubject } from 'rxjs';
 
-
-interface ExplorerItem {
+export interface ExplorerItem {
   ConfigParm: string;
   Value: string;
   Children: ExplorerItem[];
@@ -133,5 +132,18 @@ export class DataExplorerPlusService {
   // Method to update the data
   public setData(data: ExplorerItem[]) {
     this.dataSource.next(data);
+  }
+
+  public findSelectStmt(items: ExplorerItem[], configParm: string): string | null {
+    for (const item of items) {
+      if (item.ConfigParm === configParm) {
+        const selectStmtItem = item.Children.find(child => child.ConfigParm === 'selectStmt');
+        return selectStmtItem ? selectStmtItem.Value : null;
+      } else if (item.Children.length > 0) {
+        const result = this.findSelectStmt(item.Children, configParm);
+        if (result) return result;
+      }
+    }
+    return null;
   }
 }
