@@ -7,13 +7,19 @@ import { AppConfigService, AuthenticationService } from 'qbm';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DataExplorerPlusService, ExplorerItem } from './data-explorer-plus.service';
+import { DataExplorerPlusService } from './data-explorer-plus.service';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { EuiSidesheetRef, EuiSidesheetService, EUI_SIDESHEET_DATA } from '@elemental-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 import { DataExplorerPlusDetailsComponent } from './data-explorer-plus-details/data-explorer-plus-details.component';
+
+interface ExplorerItem {
+  ConfigParm: string;
+  Value: string;
+  Children: ExplorerItem[];
+}
 
 interface IdentQBMLimitedSQLType {
   IdentQBMLimitedSQL: string | null;
@@ -61,7 +67,7 @@ export class DataExplorerPlusComponent implements OnInit, OnDestroy, AfterViewIn
           // Reset component state for the new configParm
           this.resetComponentState();
 
-          console.log(this.configParm);
+          console.log("configParm",this.configParm);
 
           await this.ExplorerList();
           console.log(this.dataSourcedynamic);
@@ -116,24 +122,40 @@ export class DataExplorerPlusComponent implements OnInit, OnDestroy, AfterViewIn
     this.selectedCategory = configParm;
     this.IdentQBMLimitedSQL = null;
 
-    // Use the service's method to find the selectStmt for the selected category
-    const selectStmtValue = this.service.findSelectStmt(this.dataSourcedynamic, configParm);
-    if (selectStmtValue) {
-        this.IdentQBMLimitedSQL = {
-            IdentQBMLimitedSQL: selectStmtValue,
-            xKey: "something",  // Adjust these as needed based on your application's logic
-            xSubKey: "something"
-        };
-        console.log('IdentQBMLimitedSQL:', this.IdentQBMLimitedSQL);
-        console.log(this.selectedCategory);
-        // Assuming executeSQL is a method that takes IdentQBMLimitedSQLType and does something with it
-        this.executeSQL(this.IdentQBMLimitedSQL);
-    } else {
-        // Handle the case where no selectStmt is found
-        console.error('Select statement not found for the configParm:', configParm);
-    }
-  }
+    // Clear the search bar and the search filter
+    this.searchControl.setValue('');
+    this.dataSource.filter = '';
 
+    // Find the corresponding ExplorerItem for the selected category
+    const findSelectStmt = (items: ExplorerItem[]): string | null => {
+      console.log("Explorer item:", items);
+      for (const item of items) {
+        if (item.ConfigParm === configParm) {
+          // If this is the selected category, look for the selectStmt in its children
+          const selectStmtItem = item.Children.find(child => child.ConfigParm === 'selectStmt');
+          return selectStmtItem ? selectStmtItem.Value : null;
+        } else if (item.Children.length > 0) {
+          // Recursively search in children
+          const result = findSelectStmt(item.Children);
+          if (result) return result; // If found in sub-children, return it
+        }
+      }
+      return null; // Return null if not found at all
+    };
+
+    // Set the IdentQBMLimitedSQL based on the found selectStmt, or keep it null if not found
+    const selectStmtValue = findSelectStmt(this.dataSourcedynamic);
+    if (selectStmtValue) {
+      this.IdentQBMLimitedSQL = {
+        IdentQBMLimitedSQL: selectStmtValue,
+        xKey: "something",
+        xSubKey: "something"
+      };
+    }
+    console.log('IdentQBMLimitedSQL:', this.IdentQBMLimitedSQL);
+    console.log(this.selectedCategory);
+    this.executeSQL(this.IdentQBMLimitedSQL);
+  }
 
   applyFilter(): void {
     const filterValue = this.searchControl.value;
@@ -171,12 +193,14 @@ export class DataExplorerPlusComponent implements OnInit, OnDestroy, AfterViewIn
           };
         });
     }
-    this.cdr.detectChanges();
+    console.log("mapping:",this.sideNavOptions);
 
+    this.cdr.detectChanges();
     // Automatically select the first category if available
     if (this.sideNavOptions.length > 0) {
       const firstOption = this.sideNavOptions[0].configParm;
       // Delay the selection to ensure view initialization is complete
+      
       setTimeout(() => this.selectOption(firstOption), 0);
     }
   }
@@ -184,6 +208,7 @@ export class DataExplorerPlusComponent implements OnInit, OnDestroy, AfterViewIn
   public async ExplorerList(): Promise<void> {
     const explorers = await this.config.apiClient.processRequest<ExplorerItem[]>(this.GetExplorers());
     this.dataSourcedynamic = explorers;
+    console.log("explorer:",this.dataSourcedynamic)
     this.cdr.detectChanges();
   }
 
@@ -204,7 +229,7 @@ export class DataExplorerPlusComponent implements OnInit, OnDestroy, AfterViewIn
   public async executeSQL(limitedSQL: IdentQBMLimitedSQLType): Promise<void> {
     this.dataSource.data = [];
     this.displayedColumns = [];
-
+    console.log("path:", limitedSQL.IdentQBMLimitedSQL)
     const results = await this.config.apiClient.processRequest<any[]>(this.predefinedSQL(limitedSQL));
     if (results.length > 0) {
       this.dataSource.data = results.map(row => {
@@ -245,8 +270,9 @@ export class DataExplorerPlusComponent implements OnInit, OnDestroy, AfterViewIn
     };
   }
 
-  public async viewDetails(row: any): Promise<void> {
+  public async viewDetails(row: any, configParm: string): Promise<void> {
     console.log("Row clicked:", row);
+    console.log("configParm:", configParm);
 
     const xKey = row.xKey ?? null
     const xSubKey = row.xSubKey ?? null;
@@ -261,6 +287,7 @@ export class DataExplorerPlusComponent implements OnInit, OnDestroy, AfterViewIn
         data: {
           xKey: xKey,
           xSubKey: xSubKey,
+          configParm: configParm,
         },
       });
 

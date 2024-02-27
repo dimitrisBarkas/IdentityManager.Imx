@@ -1,128 +1,129 @@
-import { ChangeDetectorRef, Component, Inject, OnInit, Renderer2, ViewChild } from '@angular/core';
-import { EUI_SIDESHEET_DATA, EuiSidesheetService } from '@elemental-ui/core';
+import { Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { EUI_SIDESHEET_DATA } from '@elemental-ui/core';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { DataExplorerPlusService, ExplorerItem } from '../data-explorer-plus.service';
-import { DataExplorerPlusComponent } from '../data-explorer-plus.component';
 import { AppConfigService } from 'qbm';
-import { MethodDescriptor, TimeZoneInfo } from 'imx-qbm-dbts';
 import { MatPaginator } from '@angular/material/paginator';
+import { MethodDescriptor, TimeZoneInfo } from 'imx-qbm-dbts';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DOCUMENT } from '@angular/common';
+import { FormControl } from '@angular/forms';
+import { DataExplorerPlusService } from '../data-explorer-plus.service';
 
+interface ExplorerItem {
+  ConfigParm: string;
+  Value: string;
+  Children: ExplorerItem[];
+}
 interface IdentQBMLimitedSQLType {
   IdentQBMLimitedSQL: string | null;
   xKey: string | null;
   xSubKey: string | null;
 }
-
 @Component({
-  selector: 'app-data-explorer-plus-details',
+  selector: 'imx-data-explorer-plus-details',
   templateUrl: './data-explorer-plus-details.component.html',
   styleUrls: ['./data-explorer-plus-details.component.scss']
 })
-
 export class DataExplorerPlusDetailsComponent implements OnInit {
-  private styleTag: HTMLStyleElement;
-  dataSource = new MatTableDataSource<any>();
-  displayedColumns: string[] = [];
-
+  @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   lotsOfTabs: string[];
+  dataSource = new MatTableDataSource<any>([]);
+  displayedColumns: string[] = [];
   xKey: IdentQBMLimitedSQLType | null = null;
   IdentQBMLimitedSQL: IdentQBMLimitedSQLType | null = null;
   selectedCategory: string | null = null;
   private subscription: Subscription;
   configParm: string;
   sideNavOptions: { displayName: string; configParm: string }[] = [];
-  @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   dataSourcedynamic: ExplorerItem[];
- 
-  tabDataMapping: { [tabLabel: string]: any[] } = {};
-
+  searchControl = new FormControl('');
+  tabsItem: ExplorerItem[] = [];
+  tabDataMapping: { [tabLabel: string]: any[] } = {
+  };
   constructor(
     @Inject(EUI_SIDESHEET_DATA) public data: any,
     private readonly config: AppConfigService,
     private service: DataExplorerPlusService,
-    private route: ActivatedRoute,
-    private cdr: ChangeDetectorRef, private renderer: Renderer2, @Inject(DOCUMENT) private document: Document) {
-      this.lotsOfTabs = new Array(5).fill(0).map((_, index) => `Tab ${index + 1}`);
-      console.log("Received in side sheet:", data.xKey, data.xSubKey);
+    private route: ActivatedRoute,) {
+    this.lotsOfTabs = new Array(5).fill(0).map((_, index) => `Tab ${index + 1}`);
+    console.log("Received in side sheet:", data.xKey, data.xSubKey, data.configParm);
+  }
+
+  async ngOnInit(): Promise<void>  {
+    this.updateDataSourceForTab(this.lotsOfTabs[0]);
+    await this.ExplorerList();
+    this.selectOption(this.data.configParm);
+
+  }
+
+  applyFilter(): void {
+    const filterValue = this.searchControl.value;
+    this.dataSource.filter = filterValue.trim().toLowerCase();
+
+    // Reset the paginator to the first page (important if you have pagination)
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
     }
+  }
 
-    public ngOnInit(): void {
-      this.addCustomStyles();
-      this.subscription = this.route.params.subscribe(async params => {
-        // Check if configParm has actually changed to prevent unnecessary reloads
-        if (this.configParm !== params['configParm']) {
-          this.configParm = params['configParm'];
+  ngAfterViewInit() {
+    console.log("paginator datasource", this.dataSource);
+    this.dataSource.paginator = this.paginator;
+  }
 
-          // Reset component state for the new configParm
-          this.resetComponentState();
+  onTabChange(event: any): void {
+    const tabLabel = event.tab.textLabel;
+    this.updateDataSourceForTab(tabLabel);
+  }
 
-          console.log(this.configParm);
-
-          await this.ExplorerList();
-          console.log(this.dataSourcedynamic);
-          this.setSideNavOptions();
-          console.log(this.sideNavOptions);
-          this.cdr.detectChanges();
-        }
-      });
-    }
-
-    private addCustomStyles(): void {
-      const styleContent = `.pageContent { margin: 0 !important; }`;
-      this.styleTag = this.renderer.createElement('style');
-      this.styleTag.textContent = styleContent;
-      this.renderer.appendChild(this.document.head, this.styleTag);
-    }
-
-    private resetComponentState(): void {
-      // Clear the MatTableDataSource
+  updateDataSourceForTab(tabLabel: string): void {
+    const dataForTab = this.tabDataMapping[tabLabel];
+    if (dataForTab) {
+      this.dataSource.data = dataForTab;
+    } else {
+      // Handle the case where there is no data for the tab
       this.dataSource.data = [];
-      // Reset displayed columns
-      this.displayedColumns = [];
-      // Optionally reset the paginator to the first page
-      if (this.paginator) {
-        this.paginator.firstPage();
+    }
+  }
+
+  public selectOption(configParm: string): void {
+    this.selectedCategory = configParm;
+    this.IdentQBMLimitedSQL = null;
+    
+    const findSelectStmt = (items: ExplorerItem[]): string | null => {
+      for (const item of items) {
+        if (item.ConfigParm === configParm) {
+          const detailsItem = item.Children.find(child => child.ConfigParm === 'Details');
+          const selectStmtItem = detailsItem.Children.find(child => child.ConfigParm === 'selectStmt');
+          const tabsItem = detailsItem.Children.find(child => child.ConfigParm === 'Tabs');
+          console.log("Details sidesheet selectStmt:", selectStmtItem);
+          console.log("Tabs sidesheet selectStmt:", tabsItem.Children);
+          this.tabsItem = tabsItem.Children;
+          return selectStmtItem ? selectStmtItem.Value : null;
+        } else if (item.Children.length > 0) {
+          
+          const result = findSelectStmt(item.Children);
+          if (result) return result; 
+        }
       }
-      // Reset any additional state as needed
-      this.selectedCategory = null;
-      this.IdentQBMLimitedSQL = null;
-      // Ensure any other state relevant to the view is reset or reinitialized here
-    }
+      return null; // Return null if not found at all
+    };
 
-  setSideNavOptions() {
-    const matchingConfig = this.dataSourcedynamic.find(item => item.ConfigParm === this.configParm);
-    if (matchingConfig) {
-      this.sideNavOptions = matchingConfig.Children
-        .filter(child =>
-          child.ConfigParm !== 'Endpoint' &&
-          child.ConfigParm !== 'selectStmt' &&
-          child.Children.some(grandChild => grandChild.ConfigParm === 'DisplayName')
-        )
-        .map(child => {
-          const displayNameChild = child.Children.find(grandChild => grandChild.ConfigParm === 'DisplayName');
-          return {
-            displayName: displayNameChild ? displayNameChild.Value : 'Unknown',
-            configParm: child.ConfigParm
-          };
-        });
+    const selectStmtValue = findSelectStmt(this.dataSourcedynamic);
+    if (selectStmtValue) {
+      this.IdentQBMLimitedSQL = {
+        IdentQBMLimitedSQL: selectStmtValue,
+        xKey: this.data.xKey,
+        xSubKey: "something"
+      };
     }
-    this.cdr.detectChanges();
-
-    // Automatically select the first category if available
-    if (this.sideNavOptions.length > 0) {
-      const firstOption = this.sideNavOptions[0].configParm;
-      // Delay the selection to ensure view initialization is complete
-      setTimeout(() => this.selectOption(firstOption), 0);
-    }
+    console.log('IdentQBMLimitedSQL in sidesheet:', this.IdentQBMLimitedSQL);
+    this.executeSQL(this.IdentQBMLimitedSQL);
   }
 
   public async ExplorerList(): Promise<void> {
     const explorers = await this.config.apiClient.processRequest<ExplorerItem[]>(this.GetExplorers());
     this.dataSourcedynamic = explorers;
-    this.cdr.detectChanges();
   }
 
   private GetExplorers(): MethodDescriptor<void> {
@@ -139,40 +140,12 @@ export class DataExplorerPlusDetailsComponent implements OnInit {
     };
   }
 
-  onTabChange(event: any): void {
-    const tabLabel = event.tab.textLabel;
-    this.updateDataSourceForTab(tabLabel);
-  }
-  updateDataSourceForTab(tabLabel: string): void {
-    const dataForTab = this.tabDataMapping[tabLabel];
-    if (dataForTab) {
-      this.dataSource.data = dataForTab;
-    } else {
-      // Handle the case where there is no data for the tab
-      this.dataSource.data = [];
-    }
-  }
- 
-  public selectOption(configParm: string): void {
-    this.selectedCategory = configParm;
-    this.IdentQBMLimitedSQL = null;
- 
-    const selectStmtValue = this.service.findSelectStmt(this.dataSourcedynamic, configParm);
-    if (selectStmtValue) {
-      this.IdentQBMLimitedSQL = {
-        IdentQBMLimitedSQL: selectStmtValue,
-        xKey: this.data.xKey,
-        xSubKey: "something"
-      };
-    }
-    console.log('IdentQBMLimitedSQL:', this.IdentQBMLimitedSQL);
-    console.log(this.selectedCategory);
-    this.fetchPersonDetailsByXKey(this.IdentQBMLimitedSQL);
-  }
+  public async executeSQL(limitedSQL: IdentQBMLimitedSQLType): Promise<void> {
+    this.dataSource.data = [];
+    this.displayedColumns = [];
 
-  public async fetchPersonDetailsByXKey(limitedSQL: IdentQBMLimitedSQLType): Promise<void> {
-    const results = await this.config.apiClient.processRequest<any[]>(this.fetchDescriptor(limitedSQL));
-   /*  if (results.length > 0) { */
+    const results = await this.config.apiClient.processRequest<any[]>(this.predefinedSQL(limitedSQL));
+    if (results.length > 0) {
       this.dataSource.data = results.map(row => {
         const flattenedRow = {};
         row.forEach(column => {
@@ -180,20 +153,19 @@ export class DataExplorerPlusDetailsComponent implements OnInit {
         });
         return flattenedRow;
       });
-      // Set displayed columns based on the first row keys but exclude 'xKey' and 'xSubKey'
-      this.displayedColumns = Object.keys(this.dataSource.data[0]).filter(key => key !== 'xKey' && key !== 'xSubKey');
-    /* } */
+    // Set displayed columns based on the first row keys but exclude 'xKey'
+    this.displayedColumns = Object.keys(this.dataSource.data[0]).filter(key => key !== 'xKey' && key !== 'xSubKey');
+    
+    }
     if (this.paginator) {
       this.paginator.firstPage();
       this.dataSource.paginator = this.paginator;
     }
-    console.log('DataSource(SideSheet):', this.dataSource.data);
   }
 
-
-  private fetchDescriptor(limitedSQL: IdentQBMLimitedSQLType): MethodDescriptor<void> {
+  private predefinedSQL(limitedSQL: IdentQBMLimitedSQLType): MethodDescriptor<void> {
     return {
-      path: "/portal/predefinedsql/fulldynamic",
+      path: `/portal/predefinedsql/fulldynamic`,
       parameters: [
         {
           name: 'limitedSQL',
@@ -210,4 +182,5 @@ export class DataExplorerPlusDetailsComponent implements OnInit {
       responseType: 'json',
     };
   }
+
 }

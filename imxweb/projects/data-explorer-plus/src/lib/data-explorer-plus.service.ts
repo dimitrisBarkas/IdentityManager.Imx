@@ -6,30 +6,31 @@ import { EuiLoadingService } from '@elemental-ui/core';
 import { SystemInfo } from 'imx-api-qbm';
 import { MethodDescriptor, TimeZoneInfo } from 'imx-qbm-dbts';
 import { BehaviorSubject } from 'rxjs';
-
-export interface ExplorerItem {
+ 
+ 
+interface ExplorerItem {
   ConfigParm: string;
   Value: string;
   Children: ExplorerItem[];
 }
-
+ 
 @Injectable({ providedIn: 'root' })
 export class DataExplorerPlusService {
   private dataSource = new BehaviorSubject<ExplorerItem[] | null>(null);
   private dataFetched = false;
   public currentData = this.dataSource.asObservable();
-
+ 
   private selectedConfigParmSource = new BehaviorSubject<string | null>(null);
   public selectedConfigParm = this.selectedConfigParmSource.asObservable();
-
-
-
-
+ 
+ 
+ 
+ 
   public systemInfo: SystemInfo;
   public viewReady: boolean;
   public userUid: string;
   explores: number = 0;
-
+ 
   constructor(
     public readonly router: Router,
     private readonly busyService: EuiLoadingService,
@@ -37,7 +38,7 @@ export class DataExplorerPlusService {
     private readonly authentication: AuthenticationService,
     private readonly menuService: MenuService,
   ) {
-
+ 
     this.authentication.onSessionResponse.subscribe({
       next: sessionState => {
         if (sessionState?.IsLoggedOut === false) {
@@ -46,19 +47,19 @@ export class DataExplorerPlusService {
       }
     });
   }
-
+ 
   public onInit(routes: Route[]): void {
     this.addRoutes(routes);
     let overlayRef: OverlayRef;
     setTimeout(() => overlayRef = this.busyService.show(), 0);
-
+ 
     try {
       this.viewReady = true;
     } finally {
       setTimeout(() => this.busyService.hide(overlayRef), 0);
     }
   }
-
+ 
   private addRoutes(routes: Route[]): void {
     const config = this.router.config;
     routes.forEach((route) => {
@@ -66,7 +67,7 @@ export class DataExplorerPlusService {
     });
     this.router.resetConfig(config);
   }
-
+ 
   calculateKeyCounts(): void {
     if (this.dataSource.value && this.dataSource.value.length > 0) {
       this.explores = this.dataSource.value.reduce((count, item) => {
@@ -75,13 +76,14 @@ export class DataExplorerPlusService {
       }, 0);
     }
   }
-
+ 
   public async ExplorerList(): Promise<void> {
     const explorers = await this.config.apiClient.processRequest<ExplorerItem[]>(this.GetExplorers());
+    console.log(explorers);
     this.dataSource.next(explorers);
   }
-
-
+ 
+ 
   private GetExplorers(): MethodDescriptor<void> {
     return {
       path: `/portal/dataexplorerplus/configparms`,
@@ -95,7 +97,7 @@ export class DataExplorerPlusService {
       responseType: 'json',
     };
   }
-
+ 
   private async setupMenuAfterAuthentication(): Promise<void> {
     await this.ExplorerList();
     this.calculateKeyCounts();
@@ -106,7 +108,7 @@ export class DataExplorerPlusService {
         sorting: '20',
         items: []
       };
-
+ 
       this.dataSource.value?.forEach(parentItem => {
         const displayName = parentItem.Children.find(child => child.ConfigParm === "DisplayName")?.Value;
         if (displayName) {
@@ -120,30 +122,17 @@ export class DataExplorerPlusService {
             trigger: () => {
               this.selectedConfigParmSource.next(parentItem.ConfigParm);
             },
-
+ 
           });
         }
       });
-
+ 
       return menu;
     });
   }
-
+ 
   // Method to update the data
   public setData(data: ExplorerItem[]) {
     this.dataSource.next(data);
-  }
-
-  public findSelectStmt(items: ExplorerItem[], configParm: string): string | null {
-    for (const item of items) {
-      if (item.ConfigParm === configParm) {
-        const selectStmtItem = item.Children.find(child => child.ConfigParm === 'selectStmt');
-        return selectStmtItem ? selectStmtItem.Value : null;
-      } else if (item.Children.length > 0) {
-        const result = this.findSelectStmt(item.Children, configParm);
-        if (result) return result;
-      }
-    }
-    return null;
   }
 }

@@ -35,9 +35,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { CdkTableModule } from '@angular/cdk/table';
 import { DataExplorerPlusDetailsComponent } from './data-explorer-plus-details/data-explorer-plus-details.component';
-import { MatTabsModule } from '@angular/material/tabs';
-
-
+ 
+ 
 const routes: Routes = [
   {
     path: 'data-explorer-plus',
@@ -46,7 +45,7 @@ const routes: Routes = [
     resolve: [RouteGuardService],
   },
 ];
-
+ 
 @NgModule({
   declarations: [
     DataExplorerPlusComponent,
@@ -84,7 +83,6 @@ const routes: Routes = [
     TileModule,
     DataTreeModule,
     FkAdvancedPickerModule,
-    MatTabsModule
   ],
   exports: [
     DataExplorerPlusComponent,
