@@ -3,6 +3,7 @@ import { EUI_SIDESHEET_DATA } from '@elemental-ui/core';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { AppConfigService } from 'qbm';
 import { MatPaginator } from '@angular/material/paginator';
+import { MatTabGroup } from '@angular/material/tabs';
 import { MethodDescriptor, TimeZoneInfo } from 'imx-qbm-dbts';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -26,6 +27,7 @@ interface IdentQBMLimitedSQLType {
 })
 export class DataExplorerPlusDetailsComponent implements OnInit {
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
+  @ViewChild('tabGroup') tabGroup: MatTabGroup;
   lotsOfTabs: string[];
   dataSource = new MatTableDataSource<any>([]);
   displayedColumns: string[] = [];
@@ -52,8 +54,7 @@ export class DataExplorerPlusDetailsComponent implements OnInit {
   async ngOnInit(): Promise<void>  {
     this.updateDataSourceForTab(this.lotsOfTabs[0]);
     await this.ExplorerList();
-    this.selectOption(this.data.configParm);
-
+    this.selectRow(this.data.configParm);
   }
 
   applyFilter(): void {
@@ -72,33 +73,17 @@ export class DataExplorerPlusDetailsComponent implements OnInit {
   }
 
   onTabChange(event: any): void {
-    const tabLabel = event.tab.textLabel;
-    this.updateDataSourceForTab(tabLabel);
-  }
-
-  updateDataSourceForTab(tabLabel: string): void {
-    const dataForTab = this.tabDataMapping[tabLabel];
-    if (dataForTab) {
-      this.dataSource.data = dataForTab;
-    } else {
-      // Handle the case where there is no data for the tab
-      this.dataSource.data = [];
-    }
-  }
-
-  public selectOption(configParm: string): void {
-    this.selectedCategory = configParm;
-    this.IdentQBMLimitedSQL = null;
+    const selectedIndex = event;
+    const selectedTabLabel = this.tabGroup._tabs.toArray()[selectedIndex].textLabel;
+    console.log('Selected tab:', selectedTabLabel);
     
     const findSelectStmt = (items: ExplorerItem[]): string | null => {
       for (const item of items) {
-        if (item.ConfigParm === configParm) {
-          const detailsItem = item.Children.find(child => child.ConfigParm === 'Details');
-          const selectStmtItem = detailsItem.Children.find(child => child.ConfigParm === 'selectStmt');
-          const tabsItem = detailsItem.Children.find(child => child.ConfigParm === 'Tabs');
-          console.log("Details sidesheet selectStmt:", selectStmtItem);
-          console.log("Tabs sidesheet selectStmt:", tabsItem.Children);
-          this.tabsItem = tabsItem.Children;
+        if (item.Value === selectedTabLabel) {
+          console.log("im on the if statement", item);
+          const selectStmtItem = item.Children.find(child => child.ConfigParm === 'selectStmt');
+          console.log("im on the selectstsmtItem");
+         //this.tabsItem = tabsItem.Children;
           return selectStmtItem ? selectStmtItem.Value : null;
         } else if (item.Children.length > 0) {
           
@@ -117,9 +102,51 @@ export class DataExplorerPlusDetailsComponent implements OnInit {
         xSubKey: "something"
       };
     }
-    console.log('IdentQBMLimitedSQL in sidesheet:', this.IdentQBMLimitedSQL);
+    console.log('IdentQBMLimitedSQL in tab sidesheet:', this.IdentQBMLimitedSQL);
     this.executeSQL(this.IdentQBMLimitedSQL);
   }
+
+  updateDataSourceForTab(tabLabel: string): void {
+    const dataForTab = this.tabDataMapping[tabLabel];
+    if (dataForTab) {
+      this.dataSource.data = dataForTab;
+    } else {
+      // Handle the case where there is no data for the tab
+      this.dataSource.data = [];
+    }
+  }
+
+  public selectRow(configParm: string): void {
+    this.selectedCategory = configParm;
+    this.IdentQBMLimitedSQL = null;
+    
+    const findTabs = (items: ExplorerItem[]): string | null => {
+      for (const item of items) {
+        if (item.ConfigParm === configParm) {
+          const detailsChildren= item.Children.find(child => child.ConfigParm === 'Details');
+          this.tabsItem = detailsChildren.Children;
+          return detailsChildren ? detailsChildren.Value : null;
+        } else if (item.Children.length > 0) {
+          
+          const result = findTabs(item.Children);
+          if (result) return result; 
+        }
+      }
+      return null; // Return null if not found at all
+    };
+
+    const selectStmtValue = findTabs(this.dataSourcedynamic);
+/*     if (selectStmtValue) {
+      this.IdentQBMLimitedSQL = {
+        IdentQBMLimitedSQL: selectStmtValue,
+        xKey: this.data.xKey,
+        xSubKey: "something"
+      };
+    }
+    console.log("Tabs new", this.tabsItem);
+    console.log('IdentQBMLimitedSQL in sidesheet:', this.IdentQBMLimitedSQL);
+    this.executeSQL(this.IdentQBMLimitedSQL); */
+  } 
 
   public async ExplorerList(): Promise<void> {
     const explorers = await this.config.apiClient.processRequest<ExplorerItem[]>(this.GetExplorers());

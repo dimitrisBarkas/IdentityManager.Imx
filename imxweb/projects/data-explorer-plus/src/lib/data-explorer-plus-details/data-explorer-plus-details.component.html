@@ -1,4 +1,4 @@
-<mat-tab-group>
+<mat-tab-group #tabGroup (selectedIndexChange)="onTabChange($event)">
   <mat-tab *ngFor="let tab of tabsItem" [label]="tab.Value" (selectedTabChange)="onTabChange($event)">
     <div>
       <mat-form-field appearance="outline" class="search-width">
