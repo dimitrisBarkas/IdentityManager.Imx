@@ -60,12 +60,15 @@ import {
   TypedEntity,
   TypedEntityCollectionData,
   ValType,
+  FilterTreeData,
 } from 'imx-qbm-dbts';
+import { v4 as uuid } from 'uuid';
 import { DataSourceToolbarFilter, DataSourceToolbarSelectedFilter } from './data-source-toolbar-filters.interface';
 import { DataSourceToolBarGroup, DataSourceToolBarGroupingCategory } from './data-source-toolbar-groups.interface';
 import { SelectionModelWrapper } from './selection-model-wrapper';
 import { DataSourceItemStatus } from './data-source-item-status.interface';
 import { FilterTreeComponent } from './filter-tree/filter-tree.component';
+import { FilterTreeSelectionArg } from './filter-tree/filter-tree-selection-arg.interface';
 import { ColumnOptions } from './column-options';
 import { EuiSidesheetService } from '@elemental-ui/core';
 import { FilterWizardComponent } from './filter-wizard/filter-wizard.component';
@@ -160,6 +163,9 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
     selectedSortControl: this.selectedSortControl,
     ascendingSortControl: this.ascendingSortControl,
   });
+  public sortFeedbackMessages = {
+    search: this.translate.instant('#LDS#Search'),
+  };
   public sortOptions: EuiSelectOption[] = [];
   public sortOptionsFilter = (option: EuiSelectOption, searchInputValue: string) =>
     option.display.toLowerCase().includes(searchInputValue.toLowerCase());
@@ -453,6 +459,7 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
   public applyConfig(config: DSTViewConfig): void {
     // Clear all old data, but don't emit any signals
     this.resetView(false);
+    this.clearTreeFilter(false);
 
     // Handle adding to the nav state
     this.settings.navigationState = {
@@ -472,6 +479,17 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
     config?.Filter?.forEach((filter) => {
       this.addSearchFilter(filter);
     });
+
+    const tree = config?.Filter?.find((elem) => elem.ColumnName === this.columnForTree);
+    if (tree) {
+      const display = this.filterTreeItems.Elements.find((elem) => elem.Filter.Value1 === tree.Value1)?.Display;
+      this.currentFilterData = [{ display, filter: tree }];
+      if (this.settings.navigationState.filter) {
+        this.settings.navigationState.filter.push(tree);
+      } else {
+        this.settings.navigationState.filter = [tree];
+      }
+    }
 
     if (config?.GroupBy) {
       this.applyGroupBy(config);
@@ -538,9 +556,9 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
     if (!displayName) {
       return;
     }
-    const nameExists = this.settings.viewConfig.viewConfigs.some((config) => config.DisplayName === displayName);
+    const existingConfig = this.settings.viewConfig.viewConfigs.find((config) => config.DisplayName === displayName);
     if (
-      nameExists &&
+      existingConfig &&
       !(await this.confirm.confirmDelete(
         '#LDS#Heading Overwrite View',
         '#LDS#A view with the entered name already exists. Do you want to overwrite the already existing view with the new view?'
@@ -549,13 +567,16 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
       return;
     }
     const config: DSTViewConfig = {
+      Id: existingConfig?.Id,
       ViewId: this.settings.viewConfig.viewId,
       DisplayName: displayName,
       Filter: this.settings?.navigationState?.filter,
       GroupBy: this.settings?.groupData?.currentGrouping?.display,
       OrderBy: this.settings?.navigationState?.OrderBy,
-      AdditionalListColumns: this.columnOptions.additionalListElements.map((ele) => ele.ColumnName),
-      AdditionalTableColumns: this.columnOptions.selectedOptionals.map((column) => column.ColumnName),
+      AdditionalListColumns: this.columnOptions?.additionalListElements?.map((ele) => ele.ColumnName),
+      AdditionalTableColumns: this.columnOptions?.selectedOptionals
+        ?.map((column) => column.ColumnName)
+        .concat(this.columnOptions?.additionalColumns?.map((column) => column.ColumnName)),
       UseAsDefault: false,
     };
     if (this.filtersCurrentlyApplied) {
@@ -683,8 +704,17 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
   /**
    * The currently selected filter data
    */
-  public currentFilterData: IEntity[] = [];
-  public currentFilterDisplayData: string = '';
+  public currentFilterData: FilterTreeSelectionArg[] = [];
+
+  /**
+   * The column, that is used for the filter tree.
+   */
+  private columnForTree: string;
+
+  /**
+   * The filter tree data, that is provided by the settings filter method.
+   */
+  private filterTreeItems: FilterTreeData;
 
   /**
    * Filter wizard SQL expressions
@@ -728,6 +758,11 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
   private columnSubscriptions: Subscription[] = [];
 
   /**
+   * Uniqe id for each data-source-toolbar component
+   */
+  private id: string;
+
+  /**
    * @ignore Used internally in components template.
    * Selection model that handles single and multiple selection in the data table.
    * Visually selections are represented by chekcboxes, which can be checked/unchecked.
@@ -741,13 +776,14 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
     private readonly sidesheet: EuiSidesheetService,
     private readonly injector: Injector,
     private readonly translate: TranslateService,
-    private readonly sidesheetService: EuiSidesheetService,
     private readonly confirm: ConfirmationService,
     private readonly config: AppConfigService,
     private readonly snackbar: SnackBarService,
     private readonly filterService: FilterWizardService,
     private readonly systemInfoService: SystemInfoService
   ) {
+    if (!this.id) this.id = uuid();
+
     this.subscriptions.push(
       this.selection.changed.subscribe((event: SelectionChange<TypedEntity>) => {
         if (!this.isUpdatingPreselection) {
@@ -758,11 +794,8 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
 
     this.subscriptions.push(
       this.filterService.navigationStateChanged.subscribe((event: selectedFiltersParams) => {
+        if (event.id !== this.id) return;
         this.selectedFilters = event.selectedFilters;
-
-        if (this.selectedFilterType != FilterTypeIdentifier.Custom) {
-          this.updateNavigateStateWithFilters();
-        }
       })
     );
 
@@ -848,8 +881,10 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
           this.isInitialLoad = false;
         }
 
-        const filterItems = this.settings?.filterTree?.filterMethode ? await this.settings.filterTree?.filterMethode('') : { Elements: [] };
-        this.hasFilterTree = this.settings.filterTree && filterItems?.Elements?.length > 0;
+        this.filterTreeItems = this.settings?.filterTree?.filterMethode
+          ? await this.settings.filterTree?.filterMethode('')
+          : { Elements: [] };
+        this.hasFilterTree = this.settings.filterTree && this.filterTreeItems?.Elements?.length > 0;
 
         if (this.settings?.dataModel) {
           this.initColumnOptions(defaultSavedConfig);
@@ -860,7 +895,8 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
           this.hasViewSettings = false;
         }
 
-        this.filterType = filterItems?.Description;
+        this.filterType = this.filterTreeItems?.Description;
+        this.columnForTree = this.filterTreeItems?.Elements.length > 0 ? this.filterTreeItems?.Elements[0]?.Filter?.ColumnName : '';
         this.internalDataSource = new MatTableDataSource<TypedEntity>(this.settings.dataSource?.Data);
         if (this.isDataSourceLocal && (this.searchCurrenltyApplied || this.filtersCurrentlyApplied)) {
           // We need to apply a filter still over the local data since it was skipped earlier. Do so now.
@@ -1239,9 +1275,12 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
       .afterClosed()
       .toPromise();
     if (filterdata) {
+      //Get all filter, that were not associaed with the tree filter
+      const otherFilter = (this.settings.navigationState.filter ?? []).filter(
+        (elem) => elem.ColumnName !== filterdata[0].filter.ColumnName
+      );
       this.currentFilterData = filterdata;
-      this.currentFilterDisplayData = this.currentFilterData.map((filter) => filter.GetColumn('LongDisplay').GetValue()).join(', ');
-      this.filterTreeSelectionChanged.emit(this.currentFilterData.map((filter) => filter.GetColumn('Filter').GetValue()));
+      this.filterTreeSelectionChanged.emit(this.currentFilterData.map((filter) => filter.filter).concat(otherFilter)); // combine the two filter again
     }
   }
 
@@ -1255,9 +1294,19 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
 
   /**
    *  @ignore Used internally.
+   *  Resets the view and the tree filter, used in template
+   */
+  public async resetViewAndTree(): Promise<void> {
+    if (await this.resetView()) {
+      this.clearTreeFilter();
+    }
+  }
+
+  /**
+   *  @ignore Used internally.
    *  Resets additional columns, additional list elements, filters, search and searchTerms
    */
-  public async resetView(emit = true): Promise<void> {
+  public async resetView(emit = true): Promise<boolean> {
     if (
       emit &&
       !(await this.confirm.confirmDelete(
@@ -1265,9 +1314,10 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
         '#LDS#If you reset the view, the search, sorting, filters and additional columns will be reset. Are you sure you want to reset the view?'
       ))
     ) {
-      return;
+      return false;
     }
     this.columnOptions?.resetView();
+
     this.searchTerms = [];
     if (this.settings.navigationState.search) {
       this.searchControl.reset(null);
@@ -1287,15 +1337,20 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
     if (emit) {
       this.navigationStateChanged.emit(this.settings.navigationState);
     }
+    return true;
   }
 
   /**
    * clears the tree filter and emits the filterTreeSelectionChanged event
    */
-  public clearTreeFilter(): void {
+  public clearTreeFilter(emit = true): void {
+    const currentTree: FilterData = this.currentFilterData[0]?.filter;
     this.currentFilterData = [];
-    this.currentFilterDisplayData = '';
-    this.filterTreeSelectionChanged.emit([]);
+    if (emit) {
+      this.filterTreeSelectionChanged.emit(
+        this.settings.navigationState.filter?.filter((elem) => elem.ColumnName != currentTree.ColumnName)
+      );
+    }
   }
 
   /**
@@ -1355,14 +1410,16 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
 
   public canShowFilterWizard(): boolean {
     let result =
-      (this.settings?.entitySchema?.TypeName != null && this.filterService.isSqlWizardImplemented && !this.isDataSourceLocal && !this.disableFilterWizard) ||
+      (this.settings?.entitySchema?.TypeName != null &&
+        this.filterService.isSqlWizardImplemented &&
+        !this.isDataSourceLocal &&
+        !this.disableFilterWizard) ||
       this.settings?.filters?.length > 0;
     return result;
   }
 
   public async showFilterWizard(): Promise<void> {
-    const settingSave = this.storeCurrentFilterValues();
-    const sidesheetRef = this.sidesheetService.open(FilterWizardComponent, {
+    const sidesheetRef = this.sidesheet.open(FilterWizardComponent, {
       title: await this.translate.get('#LDS#Heading Filter Data').toPromise(),
       icon: 'filter',
       width: '800px',
@@ -1370,6 +1427,7 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
       testId: 'filter-wizard-sidesheet',
       disableClose: true,
       data: {
+        id: this.id,
         settings: this.settings,
         filterExpression: this.filterWizardExpression,
         selectedFilters: this.selectedFilters,
@@ -1378,21 +1436,21 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
     });
 
     sidesheetRef.afterClosed().subscribe((result: SqlWizardExpression) => {
-      if (result == null) {
-        this.resetCurrentFilterValues(settingSave);
+      if (!result && !this.filterWizardExpression) {
         return;
       }
-
       if (result?.Expression?.Expressions.length === 0) {
         this.removeFilterWizard();
         return;
       }
 
       this.settings.navigationState.filter = this.settings.navigationState.filter?.filter((x) => x.Type != FilterType.Expression);
-      this.filterWizardExpression = result;
+      if (result) {
+        this.filterWizardExpression = result;
+      }
       this.settings.navigationState.filter
-        ? this.settings.navigationState.filter.push({ Expression: this.filterWizardExpression.Expression })
-        : (this.settings.navigationState.filter = [{ Expression: this.filterWizardExpression.Expression }]);
+        ? this.settings.navigationState.filter.push({ Type: FilterType.Expression, Expression: this.filterWizardExpression.Expression })
+        : (this.settings.navigationState.filter = [{ Type: FilterType.Expression, Expression: this.filterWizardExpression.Expression }]);
 
       if (result?.Expression?.Expressions.length > 0) {
         this.updateNavigateStateWithFilters();
@@ -1401,36 +1459,10 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
   }
 
   public removeFilterWizard(reload: boolean = true): void {
-    this.settings.navigationState.filter = this.settings.navigationState.filter?.filter((x) => {
-      // x.Type != FilterType.Expression;
-      x.Expression == null;
-    });
+    this.settings.navigationState.filter = this.settings.navigationState.filter?.filter((x) => x.Expression == null);
     this.filterWizardExpression = null;
     if (reload) {
       this.navigationStateChanged.next(this.settings.navigationState);
-    }
-  }
-
-  /**
-   * @ignore Used internally
-   * Stores the 'CurrentValue' properties of each filter.
-   * @returns The list of current filter values
-   */
-  private storeCurrentFilterValues(): string[] {
-    return this.settings.filters?.map((elem) => elem.CurrentValue);
-  }
-
-  /**
-   * @ignore Used internally
-   * Resets the 'CurrentFilter' properties of each filter.
-   * @param values The list of current values
-   */
-  private resetCurrentFilterValues(values: string[]): void {
-    if (!values) {
-      return;
-    }
-    for (let index = 0; index < values.length; index++) {
-      this.settings.filters[index].CurrentValue = values[index];
     }
   }
 
@@ -1687,6 +1719,7 @@ export class DataSourceToolbarComponent implements OnChanges, OnInit, OnDestroy 
   public addSearchFilter(filter?: FilterData): void {
     if (
       this.isEnterDisabled ||
+      filter?.ColumnName === this.columnForTree ||
       (!filter && (!this.searchControl.value || (!!this.searchControl.value && this.searchControl.value?.length === 0)))
     ) {
       // Here we return early if there is nothing to search over

@@ -38,6 +38,7 @@ import { RequestActionComponent } from './request-action.component';
 import { RequestHistoryService } from '../request-history.service';
 import { JustificationService } from '../../justification/justification.service';
 import { JustificationType } from '../../justification/justification-type.enum';
+import { UserModelService } from '../../user/user-model.service';
 
 @Injectable({
   providedIn: 'root',
@@ -56,6 +57,7 @@ export class RequestActionService {
     private readonly justificationService: JustificationService,
     private readonly errorHandler: ErrorHandler,
     private readonly messageService: UserMessageService,
+    private readonly userService: UserModelService,
     private readonly ldsReplace: LdsReplacePipe
   ) {}
 
@@ -331,6 +333,7 @@ export class RequestActionService {
           type: 'error',
         });
       }
+      await this.userService.reloadPendingItems();
       this.applied.next();
     }
   }
@@ -367,6 +370,7 @@ export class RequestActionService {
           key: config.message,
           parameters: [config.data.requests.length],
         });
+        await this.userService.reloadPendingItems();
         this.applied.next();
       }
     } else {
@@ -379,7 +383,7 @@ export class RequestActionService {
       ColumnName: 'ReasonHead',
       Type: ValType.Text,
       IsMultiLine: true,
-      MinLen: required ? 0 : 1,
+      MinLen: required ? 1 : 0,
     });
 
     return new BaseCdr(column, display);

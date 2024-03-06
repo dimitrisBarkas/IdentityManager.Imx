@@ -44,10 +44,10 @@ import { CurrentProductSource } from './current-product-source';
   providedIn: 'root',
 })
 export class NewRequestOrchestrationService implements OnDestroy {
-
   //#region Private properties
   private userUid: string;
-  private defaultUser: string;
+  private defaultUser: ValueStruct<string>;
+  private lastLoggedInUser: string;
   //#endregion
 
   //#region Public properties
@@ -73,7 +73,7 @@ export class NewRequestOrchestrationService implements OnDestroy {
     value.dst.itemStatus = {
       enabled: (prod: PortalShopServiceitems): boolean => {
         return prod.IsRequestable === undefined || prod.IsRequestable?.value;
-      }
+      },
     };
     this.currentProductSourceProperty = value;
     this.currentProductSource$.next(value);
@@ -146,7 +146,6 @@ export class NewRequestOrchestrationService implements OnDestroy {
   public set selectedChip(value: number) {
     this.selectedChipProperty = value;
     this.selectedChip$.next(value);
-
   }
   public selectedChip$ = new BehaviorSubject<number>(null);
   //#endregion
@@ -234,7 +233,11 @@ export class NewRequestOrchestrationService implements OnDestroy {
         return;
       }
 
-      await this.initRecipients();
+      if (this.lastLoggedInUser !== elem.UserUid) {
+        this.lastLoggedInUser = elem.UserUid;
+        this.selectionService.clearProducts();
+        await this.initRecipients();
+      }
     });
   }
 
@@ -254,12 +257,12 @@ export class NewRequestOrchestrationService implements OnDestroy {
   }
 
   public async setDefaultUser(): Promise<void> {
-    await this.recipients.Column.PutValue(this.defaultUser);
+    await this.recipients.Column.PutValueStruct(this.defaultUser);
     this.recipients$.next(this.recipients);
   }
 
   public async setRecipients(value: ValueStruct<string>): Promise<void> {
-    await this.recipients.Column.PutValueStruct(value);    
+    await this.recipients.Column.PutValueStruct(value);
     this.recipients$.next(this.recipients);
   }
 
@@ -303,7 +306,10 @@ export class NewRequestOrchestrationService implements OnDestroy {
 
       // TODO in this case, CanRequestForSomebodyElse is false
     }
-    this.defaultUser = this.recipients.Column.GetValue();
+    this.defaultUser = {
+      DataValue: this.recipients.Column.GetValue(),
+      DisplayValue: this.recipients.Column.GetDisplayValue(),
+    };
   }
 
   private async getPersonDisplay(uid: string): Promise<string> {
