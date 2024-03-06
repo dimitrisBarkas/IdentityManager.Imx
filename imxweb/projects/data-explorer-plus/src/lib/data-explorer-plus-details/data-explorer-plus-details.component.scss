@@ -1,36 +1,59 @@
 @import '@elemental-ui/core/src/styles/_eui_palette.scss';
 @import '@elemental-ui/core/src/styles/_palette.scss';
 
-.table-container {
-    height: auto; //100%
-    overflow-y: auto;
-    display: flex;
-    box-shadow: 0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12);
+:host {
+  height: 100%;
+}
+
+.details-container{
+  padding: 20px;
+  height: 100%;
+  background-color: white;
+}
+
+.table-container { 
+  padding: 10px;
+  height: auto; //100%
+  overflow-y: auto;
+  display: block;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25) ;
+
+  .mat-table{
+    box-shadow: none !important;
   }
 
-  .no-results {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  .data-source-toolbar-container{
+    display: flex; 
     align-items: center;
-    height: 100%;
-    box-shadow: 0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12);
-  
-    .eui-icon {
-      font-size: 100px;
-      color: rgba($black-c, 0.55);
-    }
-  
-    p {
-      margin: 0;
-      font-size: 18px;
-      color: $black-9;
-    }
-  
   }
 
-  .search-width {
-    width: 100%;
-    height:25px;
-    padding: 10px;
+  .imx-data-source-toolbar-right {
+    margin-left: auto; 
   }
+}
+
+.no-results {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25) ;
+  
+  .eui-icon {
+    font-size: 100px;
+    color: rgba($black-c, 0.55);
+  }
+  
+  p {
+    margin: 0;
+    font-size: 18px;
+    color: $black-9;
+  }
+}
+
+.search-bar{
+  width: 100%;
+  height:auto;
+  background-color: white;
+}

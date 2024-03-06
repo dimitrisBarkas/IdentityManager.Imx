@@ -29,18 +29,20 @@
 
         </div>
       </div>
-      <div>
-        <mat-form-field appearance="outline" class="search-width">
-            <mat-label>Search</mat-label>
-            <mat-icon matPrefix>search</mat-icon>
-            <input matInput (keyup)="applyFilter()" [formControl]="searchControl" [disabled]="!dataSource.data.length">
-            <button mat-icon-button matSuffix *ngIf="searchControl.value" (click)="searchControl.setValue('')">
-                <mat-icon>close</mat-icon>
-            </button>
-        </mat-form-field>
-      </div>
 
-      <div *ngIf="dataSource.data.length > 0; else noDataTemplate" class="table-container">
+    <div *ngIf="dataSource.data.length > 0; else noDataTemplate" class="table-container">
+  <div class="data-source-toolbar-container">
+    <mat-form-field appearance="outline" class="search-bar">
+        <mat-label>Search</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput (keyup)="applyFilter()" [formControl]="searchControl" [disabled]="!dataSource.data.length">
+        <button mat-icon-button matSuffix *ngIf="searchControl.value" (click)="searchControl.setValue('')">
+            <mat-icon>close</mat-icon>
+        </button>
+    </mat-form-field>
+
+
+  </div>
       <!-- Add mat-table to display query results -->
       <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
         <!-- Dynamically create columns for each displayedColumn -->
