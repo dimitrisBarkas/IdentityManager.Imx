@@ -1,0 +1,59 @@
+@import '@elemental-ui/core/src/styles/_eui_palette.scss';
+@import '@elemental-ui/core/src/styles/_palette.scss';
+
+:host {
+  height: 100%;
+}
+
+.details-container{
+  padding: 20px;
+  height: 100%;
+  background-color: white;
+}
+
+.table-container { 
+  padding: 10px;
+  height: auto; //100%
+  overflow-y: auto;
+  display: block;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25) ;
+
+  .mat-table{
+    box-shadow: none !important;
+  }
+
+  .data-source-toolbar-container{
+    display: flex; 
+    align-items: center;
+  }
+
+  .imx-data-source-toolbar-right {
+    margin-left: auto; 
+  }
+}
+
+.no-results {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25) ;
+  
+  .eui-icon {
+    font-size: 100px;
+    color: rgba($black-c, 0.55);
+  }
+  
+  p {
+    margin: 0;
+    font-size: 18px;
+    color: $black-9;
+  }
+}
+
+.search-bar{
+  width: 100%;
+  height:auto;
+  background-color: white;
+}
