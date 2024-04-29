@@ -22,22 +22,18 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  declarations: [
-    CustomFormComponent,
-    CustomPopupComponent,
-    CustomTableComponent,
-  ],
+  declarations: [CustomFormComponent, CustomPopupComponent, CustomTableComponent],
   imports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    MatFormFieldModule, 
+    MatFormFieldModule,
     MatButtonModule,
     MatTableModule,
-    MatInputModule, 
+    MatInputModule,
     MatSelectModule,
-    RouterModule.forRoot(routes)
-  ]
+    RouterModule.forRoot(routes),
+  ],
 })
 export class CustomFormModule {
   constructor(private readonly menuService: MenuService, private readonly logger: ClassloggerService) {
@@ -48,15 +44,13 @@ export class CustomFormModule {
   /** This method defines the menu structure for the portal. */
   private setupMenu(): void {
     this.menuService.addMenuFactories((preProps: string[], features: string[]) => {
-
-        const menu: MenuItem = {
-          id: 'ROOT_CustomForm',
-          title: '#LDS#Custom form',
-          sorting: '70',
-          route: routes[0].path,
-        };
-        return menu;
-
+      const menu: MenuItem = {
+        id: 'ROOT_CustomForm',
+        title: '#LDS#Custom form',
+        sorting: '70',
+        route: routes[0].path,
+      };
+      return menu;
     });
   }
- }
+}

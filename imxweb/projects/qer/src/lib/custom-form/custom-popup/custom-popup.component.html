@@ -1,5 +1,5 @@
-<div class="backdrop" (click)="close()"></div>
+<div class="backdrop" (click)="onClose()"></div>
 <div class="popup">
   <p>{{ firstName }} {{ lastName }} was added successfully!</p>
-  <button (click)="close()">OK</button>
+  <button mat-raised-button color="primary" (click)="onClose()">OK</button>
 </div>

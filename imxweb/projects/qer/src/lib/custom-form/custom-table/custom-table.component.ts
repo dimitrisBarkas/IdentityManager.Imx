@@ -1,30 +1,22 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { FormDataService } from '../form-data.service';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'ccc-custom-table',
   templateUrl: './custom-table.component.html',
-  styleUrls: ['./custom-table.component.scss']
+  styleUrls: ['./custom-table.component.scss'],
 })
-export class CustomTableComponent implements OnInit {
+export class CustomTableComponent {
+  @Input() dataSource: any[];
+  @Output() closeTable = new EventEmitter<void>();
+  @Output() addAnotherEntry = new EventEmitter<void>();
 
-  dataSource: any[] = [];
   displayedColumns: string[] = ['firstname', 'lastname', 'address', 'email'];
 
-/*   @Output() closeTable = new EventEmitter<void>(); */
-  @Output() showPopupEvent = new EventEmitter<void>(); // Add this event
-
-  constructor(private formDataService: FormDataService) {}
-
-  ngOnInit(): void {
-    this.dataSource = this.formDataService.formDataList;
+  onClose() {
+    this.closeTable.emit();
   }
 
-/*   onClose() {
-    this.closeTable.emit();  // Existing event to close the table
-  } */
-
-  onShowPopup() {
-    this.showPopupEvent.emit();  // Trigger the popup from here
+  onAddEntry() {
+    this.addAnotherEntry.emit();
   }
 }

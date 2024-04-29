@@ -1,27 +1,29 @@
 <div *ngIf="!showTable; else showTableView">
   <form (ngSubmit)="onSubmit(f)" #f="ngForm">
-    <mat-form-field>
+    <mat-form-field class="example-full-width">
       <mat-label>First name</mat-label>
       <input matInput ngModel name="firstname" required>
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field class="example-full-width">
       <mat-label>Last name</mat-label>
       <input matInput ngModel name="lastname" required>
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field class="example-full-width">
       <mat-label>Address</mat-label>
       <input matInput ngModel name="address">
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field class="example-full-width">
       <mat-label>Email</mat-label>
       <input matInput ngModel name="email">
     </mat-form-field>
-    <button class="btn btn-primary" type="submit">Submit</button>
+    <button mat-raised-button color="primary" type="submit">Submit</button>
   </form>
 </div>
 
 <ng-template #showTableView>
-  <ccc-custom-table  (showPopupEvent)="showPopup()"></ccc-custom-table>
+  <ccc-custom-table [dataSource]="formDataList" (closeTable)="handleTableClose()"
+    (addAnotherEntry)="handleAddAnotherEntry()"></ccc-custom-table>
 </ng-template>
 
-<ccc-custom-popup *ngIf="popup" [firstName]="currentFirstName" [lastName]="currentLastName" (closePopup)="closePopup()"></ccc-custom-popup>
+<ccc-custom-popup *ngIf="showPopup" [firstName]="currentFirstName" [lastName]="currentLastName"
+  (closePopup)="handlePopupClose()"></ccc-custom-popup>

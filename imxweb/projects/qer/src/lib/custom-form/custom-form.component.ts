@@ -1,44 +1,55 @@
 import { Component, OnInit } from '@angular/core';
-import { NgForm } from '@angular/forms'; 
-import { FormDataService } from './form-data.service';
+import { NgForm } from '@angular/forms';
 
 @Component({
   selector: 'ccc-custom-form',
   templateUrl: './custom-form.component.html',
-  styleUrls: ['./custom-form.component.scss']
+  styleUrls: ['./custom-form.component.scss'],
 })
 export class CustomFormComponent implements OnInit {
-  showTable: boolean = false;
-  popup: boolean = false; // This controls popup visibility
+  formDataList: any[] = [];
   currentFirstName: string = '';
   currentLastName: string = '';
+  showTable = false;
+  showPopup = false;
 
-  constructor(private formDataService: FormDataService) {}
-
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.loadFormData();
+  }
 
   onSubmit(form: NgForm) {
     if (form.valid) {
-      this.formDataService.formDataList.push(form.value);
+      this.formDataList.push(form.value);
       this.currentFirstName = form.value.firstname;
       this.currentLastName = form.value.lastname;
-      this.showTable = true; // Show table after submitting form
-      this.popup = false; // Ensure popup does not show yet
+      this.saveFormData();
+      this.showTable = true;
       form.reset();
     }
   }
 
-  showPopup() {
-    this.popup = true; // Set this to true when OK button is clicked in the table component
+  handlePopupClose() {
+    this.showPopup = false; // This should close the popup only.
   }
 
-  closePopup() {
-    this.popup = false; // Hide the popup when closed
+  handleTableClose() {
+    this.showPopup = true; // This should now show the popup.
+    this.showTable = false; // Optionally keep the table open until the popup is closed.
   }
 
-  resetForm(form: NgForm) {
-    form.resetForm();
-    this.showTable = false;
-    this.popup = false;
+  handleAddAnotherEntry() {
+    this.showTable = false; // Return to form, hide the table.
+    this.showPopup = false; // Ensure the popup is not shown.
+  }
+
+  private saveFormData() {
+    sessionStorage.setItem('formData', JSON.stringify(this.formDataList));
+  }
+
+  private loadFormData() {
+    const data = sessionStorage.getItem('formData');
+    if (data) {
+      this.formDataList = JSON.parse(data);
+    }
   }
 }

@@ -1,5 +1,19 @@
 .mat-form-field {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  left: 2.5%;
+  right: 2.5%;
+  width: 95%; // Set a width percentage as needed
+  margin: auto; // Centers the form field within its parent
+}
+
+button {
+  display: block;
+  margin: 10px auto 0; // Centers the button horizontally and adds margin at the top
+}
+
+form {
+  border-radius: 15px;
+  background-color: white;
+  width: 100%;
+  padding: 20px;
+  
 }
