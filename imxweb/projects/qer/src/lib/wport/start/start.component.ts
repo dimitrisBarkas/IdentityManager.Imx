@@ -75,6 +75,14 @@ export class StartComponent implements OnInit {
     }
   }
 
+  public ShowCustomForm(): boolean {
+    return true;
+  }
+
+  public GoToCustomForm(): void {
+    this.router.navigate(['custom-form']);
+  }
+
   public ShowPasswordTile(): boolean {
     return this.userConfig?.ShowPasswordTile;
   }
