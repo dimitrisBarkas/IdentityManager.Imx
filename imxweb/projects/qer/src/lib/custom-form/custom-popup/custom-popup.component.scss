@@ -19,3 +19,8 @@
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999; // Just below the popup
 }
+
+button {
+  display: block;
+  margin: 10px auto 0; // Centers the button horizontally and adds margin at the top
+}
