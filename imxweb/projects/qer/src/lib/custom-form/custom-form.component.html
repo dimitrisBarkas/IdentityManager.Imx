@@ -1,0 +1,27 @@
+<div *ngIf="!showTable; else showTableView">
+  <form (ngSubmit)="onSubmit(f)" #f="ngForm">
+    <mat-form-field>
+      <mat-label>First name</mat-label>
+      <input matInput ngModel name="firstname" required>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Last name</mat-label>
+      <input matInput ngModel name="lastname" required>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Address</mat-label>
+      <input matInput ngModel name="address">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Email</mat-label>
+      <input matInput ngModel name="email">
+    </mat-form-field>
+    <button class="btn btn-primary" type="submit">Submit</button>
+  </form>
+</div>
+
+<ng-template #showTableView>
+  <ccc-custom-table  (showPopupEvent)="showPopup()"></ccc-custom-table>
+</ng-template>
+
+<ccc-custom-popup *ngIf="popup" [firstName]="currentFirstName" [lastName]="currentLastName" (closePopup)="closePopup()"></ccc-custom-popup>

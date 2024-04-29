@@ -80,7 +80,8 @@ import {
   UserProcessModule,
   SourceDetectiveModule,
   RoleMembershipsModule,
-  TeamResponsibilitiesModule
+  TeamResponsibilitiesModule,
+  CustomFormModule,
 } from 'qer';
 
 import { APP_BASE_HREF } from '@angular/common';
@@ -120,6 +121,7 @@ export function getBaseHref(): string {
     StatisticsModule,
     QpmIntegrationModule,
     CustomThemeModule,
+    CustomFormModule,
     TranslateModule.forRoot({
       loader: {
         provide: TranslateLoader,
