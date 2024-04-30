@@ -29,17 +29,17 @@ export class CustomFormComponent implements OnInit {
   }
 
   handlePopupClose() {
-    this.showPopup = false; // This should close the popup only.
+    this.showPopup = false;
   }
 
   handleTableClose() {
-    this.showPopup = true; // This should now show the popup.
-    this.showTable = false; // Optionally keep the table open until the popup is closed.
+    this.showPopup = true;
+    this.showTable = false;
   }
 
   handleAddAnotherEntry() {
-    this.showTable = false; // Return to form, hide the table.
-    this.showPopup = false; // Ensure the popup is not shown.
+    this.showTable = false;
+    this.showPopup = false;
   }
 
   private saveFormData() {

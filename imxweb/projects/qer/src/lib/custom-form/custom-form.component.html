@@ -1,23 +1,24 @@
 <div *ngIf="!showTable; else showTableView">
   <form (ngSubmit)="onSubmit(f)" #f="ngForm">
-    <mat-form-field class="example-full-width">
+    <mat-form-field appearance="fill">
       <mat-label>First name</mat-label>
       <input matInput ngModel name="firstname" required>
     </mat-form-field>
-    <mat-form-field class="example-full-width">
+    <mat-form-field appearance="fill">
       <mat-label>Last name</mat-label>
       <input matInput ngModel name="lastname" required>
     </mat-form-field>
-    <mat-form-field class="example-full-width">
+    <mat-form-field appearance="fill">
       <mat-label>Address</mat-label>
       <input matInput ngModel name="address">
     </mat-form-field>
-    <mat-form-field class="example-full-width">
+    <mat-form-field appearance="fill">
       <mat-label>Email</mat-label>
       <input matInput ngModel name="email">
     </mat-form-field>
     <button mat-raised-button color="primary" type="submit">Submit</button>
   </form>
+
 </div>
 
 <ng-template #showTableView>
